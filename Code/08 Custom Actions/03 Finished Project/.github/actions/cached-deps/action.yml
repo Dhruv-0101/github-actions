@@ -1,28 +1,47 @@
+# Name of the custom action as it appears in GitHub Actions UI
 name: 'Get & Cache Dependencies'
+
+# Description of what this custom action does
 description: 'Get the dependencies (via npm) and cache them.'
+
+# Inputs allow workflow callers to pass parameters/arguments into this action
 inputs:
   caching:
     description: 'Whether to cache dependencies or not.'
     required: false
-    default: 'true'
+    default: 'true' # Default value if no input is explicitly provided
+
+# Outputs allow this action to pass data back to the calling workflow
 outputs:
   used-cache:
     description: 'Whether the cache was used.'
+    # Value points to an output set in the 'install' step below
     value: ${{ steps.install.outputs.cache }}
+
+# Defines the execution type of this action
 runs:
+  # 'composite' tells GitHub Actions that this action bundles multiple steps into one reusable action
   using: 'composite'
   steps:
+    # Step 1: Cache node_modules using GitHub's official cache action
     - name: Cache dependencies
+      # Only run this step if the 'caching' input parameter is set to 'true'
       if: inputs.caching == 'true'
       id: cache
       uses: actions/cache@v3
       with:
         path: node_modules
+        # Cache key is based on the hash of package-lock.json to invalidate cache when dependencies change
         key: deps-node-modules-${{ hashFiles('**/package-lock.json') }}
+
+    # Step 2: Install dependencies if cache was not hit or caching is disabled
     - name: Install dependencies
       id: install
+      # Condition: Run if cache missed OR if caching was explicitly disabled by caller
       if: steps.cache.outputs.cache-hit != 'true' || inputs.caching != 'true'
       run: |
         npm ci
+        # Set an output key-value pair for this step, accessible via ${{ steps.install.outputs.cache }}
         echo "cache='${{ inputs.caching }}'" >> $GITHUB_OUTPUT
+      # In composite actions, specifying 'shell' is mandatory for 'run' commands
       shell: bash

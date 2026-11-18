@@ -1,8 +1,17 @@
+# The name of the workflow as it appears in the Actions tab of the GitHub repository
 name: Handle issues
+
+# Defines the trigger for this workflow.
+# Automatically triggers whenever an issue event occurs (e.g., opened, edited, deleted, closed, reopened, assigned, etc.).
 on: issues
+
+# A workflow run is made up of one or more jobs that run sequentially or in parallel
 jobs:
+  # The 'output-info' job: prints event details to the console logs
   output-info:
+    # Runs on a hosted Ubuntu virtual machine
     runs-on: ubuntu-latest
     steps:
+      # Step 1: Serializes the specific GitHub event context object into JSON and prints it to the console logs
       - name: Output event details
-        run: echo "${{ toJSON(github.event) }}"
+        run: echo "${{ toJSON(github.event) }}"

@@ -1,10 +1,23 @@
+# The name of the workflow as it appears in the Actions tab of the GitHub repository
 name: First Workflow
+
+# Defines the event(s) that trigger the workflow.
+# 'workflow_dispatch' enables manual triggering of the workflow from the GitHub UI, CLI, or API.
 on: workflow_dispatch
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
+  # Defines a job named 'first-job'
   first-job:
+    # Specifies the type of runner (virtual machine environment) to execute this job
     runs-on: ubuntu-latest
+    
+    # A list of steps (tasks) to be run sequentially within this job
     steps:
+      # Step 1: Prints a greeting message to the console
       - name: Print greeting
         run: echo "Hello World!"
+      
+      # Step 2: Prints a goodbye message to the console
       - name: Print goodbye
         run: echo "Done - bye!"

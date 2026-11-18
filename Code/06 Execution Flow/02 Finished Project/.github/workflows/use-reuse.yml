@@ -66,17 +66,24 @@ jobs:
         with:
           name: dist-files
           path: dist
+  # Job: deploy
   deploy:
     needs: build
+    # Calls the local reusable workflow using a relative path from the repository root
     uses: ./.github/workflows/reusable.yml
+    # Passes input parameters expected by the reusable workflow
     with:
       artifact-name: dist-files
     # secrets:
       # some-secret: ${{ secrets.some-secret }}
+      
+  # Job: print-deploy-result
   print-deploy-result:
+    # Requires the 'deploy' job (the reusable workflow call) to complete first
     needs: deploy
     runs-on: ubuntu-latest
     steps:
+      # Prints the output 'result' returned by the reusable workflow using 'needs.<job_id>.outputs.<output_name>'
       - name: Print deploy output
         run: echo "${{ needs.deploy.outputs.result }}"
   report:

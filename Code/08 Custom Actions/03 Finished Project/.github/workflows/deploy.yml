@@ -1,70 +1,114 @@
+# Name of the workflow as shown in GitHub repository's Actions tab
 name: Deployment
+
+# Controls when the workflow will run
 on:
   push:
     branches:
-      - main
+      - main # Triggers the workflow on every push to the 'main' branch
+
 jobs:
+  # =========================================================================
+  # Job 1: Linting the codebase
+  # =========================================================================
   lint:
     runs-on: ubuntu-latest
     steps:
+      # Step 1: Checkout the repository code
       - name: Get code
         uses: actions/checkout@v3
+
+      # Step 2: Use custom composite action from local directory to manage dependencies
       - name: Load & cache dependencies
         id: cache-deps
-        uses: ./.github/actions/cached-deps
+        uses: ./.github/actions/cached-deps # Path to local composite action directory
         with:
-          caching: 'false'
+          caching: 'false' # Explicitly disable caching for demonstration/lint job
+
+      # Step 3: Print output received from custom composite action step
       - name: Output information
         run: echo "Cache used? ${{ steps.cache-deps.outputs.used-cache }}"
+
+      # Step 4: Run code linter
       - name: Lint code
         run: npm run lint
+
+  # =========================================================================
+  # Job 2: Running automated tests
+  # =========================================================================
   test:
     runs-on: ubuntu-latest
     steps:
       - name: Get code
         uses: actions/checkout@v3
+
+      # Use custom composite action (defaults to caching: 'true')
       - name: Load & cache dependencies
         uses: ./.github/actions/cached-deps
+
       - name: Test code
         id: run-tests
         run: npm run test
+
+      # Upload test report artifact only if tests fail
       - name: Upload test report
         if: failure() && steps.run-tests.outcome == 'failure'
         uses: actions/upload-artifact@v3
         with:
           name: test-report
           path: test.json
+
+  # =========================================================================
+  # Job 3: Building the website artifact
+  # =========================================================================
   build:
-    needs: test
+    needs: test # Ensures 'test' job completes successfully before running build
     runs-on: ubuntu-latest
     steps:
       - name: Get code
         uses: actions/checkout@v3
+
+      # Load dependencies using custom composite action
       - name: Load & cache dependencies
         uses: ./.github/actions/cached-deps
+
+      # Build project output into 'dist' folder
       - name: Build website
         run: npm run build
+
+      # Upload dist folder as a build artifact for downstream jobs (e.g. deploy)
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
           name: dist-files
           path: dist
+
+  # =========================================================================
+  # Job 4: Deploying site using a custom Docker action
+  # =========================================================================
   deploy:
+    # OIDC & GitHub permissions needed for cloud authentication/deployment
     permissions:
       id-token: write
       contents: read
-    needs: build
+    needs: build # Depends on successful build job execution
     runs-on: ubuntu-latest
     steps:
       - name: Get code
         uses: actions/checkout@v3
+
+      # Download build artifacts generated in the 'build' job
       - name: Get build artifacts
         uses: actions/download-artifact@v3
         with:
           name: dist-files
           path: ./dist
+
+      # Inspect directory contents to confirm downloaded build artifact
       - name: Output contents
         run: ls
+
+      # Deploy using custom Docker container action from ./.github/actions/deploy-s3-docker
       - name: Deploy site
         id: deploy
         uses: ./.github/actions/deploy-s3-docker
@@ -75,6 +119,8 @@ jobs:
           bucket: gha-security-hosting-demo
           dist-folder: ./dist
           # bucket-region: us-east-2
+
+      # Output website deployment URL returned by custom action
       - name: Output information
         run: |
           echo "Live URL: ${{ steps.deploy.outputs.website-url }}"

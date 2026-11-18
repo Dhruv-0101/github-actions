@@ -1,34 +1,59 @@
+# The name of the workflow as it appears in the Actions tab of the GitHub repository
 name: Events Demo 1
+
+# Defines the trigger events for the workflow
 on:
+  # Triggers when a Pull Request is opened
   pull_request:
     types:
       - opened
+    # Limits the trigger to Pull Requests targeting these specific branches
     branches:
-      - main # main
-      - 'dev-*' # dev-new dev-this-is-new
-      - 'feat/**' # feat/new feat/new/button
+      - main       # Matches the exact branch named 'main'
+      - 'dev-*'    # Matches branch names starting with 'dev-' (single-level wildcard, e.g., dev-new)
+      - 'feat/**'  # Matches branch names starting with 'feat/' (multi-level wildcard, e.g., feat/new/button)
+  
+  # Enables manual execution of this workflow from the GitHub Actions UI, CLI, or API
   workflow_dispatch:
+  
+  # Triggers on pushes to the repository
   push:
+    # Limits the trigger to pushes targeting these specific branches
     branches:
-      - main # main
-      - 'dev-*' # dev-new dev-this-is-new
-      - 'feat/**' # feat/new feat/new/button
-      # developer-1
+      - main       # Matches the exact branch named 'main'
+      - 'dev-*'    # Matches branch names starting with 'dev-' (single-level wildcard)
+      - 'feat/**'  # Matches branch names starting with 'feat/' (multi-level wildcard)
+    # Prevents the workflow from running if the only changed files are in the specified paths
     paths-ignore:
-      - '.github/workflows/*'
+      - '.github/workflows/*' # Ignore changes to files inside the workflows directory
+
+# A workflow run is made up of one or more jobs that run sequentially or in parallel
 jobs:
+  # The 'deploy' job: handles testing, building, and deploying the application
   deploy:
+    # Runs the job on a hosted Ubuntu virtual machine
     runs-on: ubuntu-latest
     steps:
+      # Step 1: Prints the event context information as a JSON string to the workflow console logs
       - name: Output event data
         run: echo "${{ toJSON(github.event) }}"
+      
+      # Step 2: Checks out the repository's code to the runner
       - name: Get code
         uses: actions/checkout@v3
+      
+      # Step 3: Installs the project dependencies
       - name: Install dependencies
         run: npm ci
+      
+      # Step 4: Runs tests defined in the package.json scripts
       - name: Test code
         run: npm run test
+      
+      # Step 5: Builds the project
       - name: Build code
         run: npm run build
+      
+      # Step 6: Simulates deploying the code
       - name: Deploy project
-        run: echo "Deploying..."
+        run: echo "Deploying..."

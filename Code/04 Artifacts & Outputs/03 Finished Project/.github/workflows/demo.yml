@@ -1,64 +1,123 @@
+# The name of the workflow as it appears in the Actions tab of the GitHub repository
 name: Deploy website
+
+# Defines the trigger for this workflow.
+# It runs automatically whenever code is pushed to the 'main' branch.
 on:
   push:
     branches:
       - main
+
+# A list of jobs that run as part of this workflow run.
+# Note: By default, separate jobs run in parallel on completely isolated virtual machines.
 jobs:
+  # Job 1: Responsible for checking, linting, and testing the application code
   test:
+    # Runs the job on a hosted Ubuntu virtual machine
     runs-on: ubuntu-latest
     steps:
+      # Step 1: Checks out the repository's code to the runner
       - name: Get code
         uses: actions/checkout@v3
+
+      # Step 2: Caches Node Package Manager (~/.npm) directory to speed up subsequent workflow runs.
+      # - 'path': points to the npm global cache folder to cache.
+      # - 'key': unique identifier based on the hash of package-lock.json.
+      #   * Cache Hit: If package-lock.json hasn't changed, the key matches, and the cached ~/.npm folder is restored.
+      #   * Cache Miss: If package-lock.json changes, the key changes, bypassing cache, running a fresh npm install, and saving a new cache.
       - name: Cache dependencies
         uses: actions/cache@v3
         with:
           path: ~/.npm
           key: deps-node-modules-${{ hashFiles('**/package-lock.json') }}
+
+      # Step 3: Installs the project dependencies (clean install)
       - name: Install dependencies
         run: npm ci
+
+      # Step 4: Lints the source code to verify style and identify potential errors
       - name: Lint code
         run: npm run lint
+
+      # Step 5: Runs the automated test suite
       - name: Test code
         run: npm run test
+
+  # Job 2: Responsible for building the application, publishing build outputs, and archiving build artifacts
   build:
+    # Requires the 'test' job to complete successfully before this job can run
     needs: test
     runs-on: ubuntu-latest
+
+    # Exposes outputs from this job so other jobs (like 'deploy') can access them before this job's VM is deleted.
     outputs:
+      # Bridge: Takes the local step output ('script-file' from the 'publish' step) and exports it as a job output.
       script-file: ${{ steps.publish.outputs.script-file }}
+      #this should be anything---script-file
+
     steps:
+      # Step 1: Checks out the codebase to this job's runner
       - name: Get code
         uses: actions/checkout@v3
+
+      # Step 2: Caches dependencies to speed up the install step (using the same cache key/hash logic)
       - name: Cache dependencies
         uses: actions/cache@v3
         with:
           path: ~/.npm
           key: deps-node-modules-${{ hashFiles('**/package-lock.json') }}
+
+      # Step 3: Installs the project dependencies
       - name: Install dependencies
         run: npm ci
+
+      # Step 4: Builds the website (creates the production-ready 'dist' directory containing bundled assets)
       - name: Build website
         run: npm run build
+
+      # Step 5: Finds the generated JavaScript filename and saves it as a step-level output.
+      # 1. 'id: publish' labels this step so its outputs can be referenced.
+      # 2. Writing 'key=value' format to the $GITHUB_OUTPUT file registers a step output.
+      #    - Key (Variable name): 'script-file'
+      #    - Value (Dynamic content): The '{}' placeholder is replaced by the actual filename found (e.g., 'index-a1b2c.js').
+      #    - Resulting write to GITHUB_OUTPUT: 'script-file=index-a1b2c.js'
       - name: Publish JS filename
         id: publish
         run: find dist/assets/*.js -type f -execdir echo 'script-file={}' >> $GITHUB_OUTPUT ';'
+
+      # Step 6: Uploads the compiled 'dist' folder as a workflow artifact named 'dist-files'.
+      # Because runner VMs are destroyed at the end of a job, artifacts are uploaded to GitHub's storage
+      # so that subsequent jobs can download them or users can download them via the GitHub UI.
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
           name: dist-files
           path: dist
+          # The '|' character in YAML denotes a literal multiline block, which allows you to list multiple paths:
           # path: |
           #   dist
           #   package.json
+
+  # Job 3: Responsible for downloading the build artifacts and deploying the site
   deploy:
+    # Requires the 'build' job to complete successfully first
     needs: build
     runs-on: ubuntu-latest
     steps:
+      # Step 1: Downloads the previously uploaded 'dist-files' artifact from GitHub's storage into the current VM workspace
       - name: Get build artifacts
         uses: actions/download-artifact@v3
         with:
           name: dist-files
+
+      # Step 2: Outputs directory contents to verify the artifacts were downloaded and extracted successfully
       - name: Output contents
         run: ls
+
+      # Step 3: Prints the filename output string retrieved from the 'build' job's outputs
       - name: Output filename
         run: echo "${{ needs.build.outputs.script-file }}"
+
+      # Step 4: Simulates deploying the code
       - name: Deploy
         run: echo "Deploying..."

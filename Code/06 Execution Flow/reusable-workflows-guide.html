@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub Actions: Reusable Workflows Guide</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --card-bg: rgba(17, 24, 39, 0.7);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --primary-neon: #3b82f6;
+      --secondary-neon: #a855f7;
+      --success-neon: #10b981;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --highlight-gradient: linear-gradient(135deg, var(--primary-neon), var(--secondary-neon));
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Outfit', sans-serif;
+      overflow-x: hidden;
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* Ambient background glows */
+    .glow-bg {
+      position: absolute;
+      top: -10%;
+      right: 10%;
+      width: 50vw;
+      height: 50vw;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, rgba(168, 85, 247, 0.05) 50%, transparent 100%);
+      filter: blur(80px);
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .glow-bg-2 {
+      position: absolute;
+      bottom: 10%;
+      left: 5%;
+      width: 40vw;
+      height: 40vw;
+      background: radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, rgba(59, 130, 246, 0.05) 50%, transparent 100%);
+      filter: blur(100px);
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    header {
+      padding: 4rem 2rem 2rem;
+      text-align: center;
+      position: relative;
+    }
+
+    header h1 {
+      font-size: 3.5rem;
+      font-weight: 800;
+      background: linear-gradient(to right, #ffffff, #3b82f6, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 1rem;
+      letter-spacing: -0.03em;
+    }
+
+    header p {
+      font-size: 1.25rem;
+      color: var(--text-muted);
+      max-width: 800px;
+      margin: 0 auto;
+      font-weight: 300;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 3rem;
+    }
+
+    /* Navigation Sidebar */
+    .sidebar {
+      position: sticky;
+      top: 2rem;
+      height: fit-content;
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.5rem;
+      z-index: 10;
+    }
+
+    .sidebar h3 {
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.5rem;
+    }
+
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      padding: 1rem;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: 'Outfit', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      margin-bottom: 0.5rem;
+      gap: 0.75rem;
+    }
+
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-main);
+      transform: translateX(5px);
+    }
+
+    .nav-btn.active {
+      background: var(--highlight-gradient);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(59, 130, 246, 0.25);
+    }
+
+    /* Content Area */
+    .main-content {
+      min-width: 0;
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.5s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Card styling */
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 2.5rem;
+      margin-bottom: 2rem;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      transition: border-color 0.3s;
+    }
+
+    .card:hover {
+      border-color: rgba(59, 130, 246, 0.4);
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--highlight-gradient);
+    }
+
+    .card-title {
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    p.intro-text {
+      font-size: 1.1rem;
+      color: var(--text-main);
+      margin-bottom: 1.5rem;
+    }
+
+    .hinglish-tag {
+      background: rgba(59, 130, 246, 0.15);
+      color: #93c5fd;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      padding: 0.25rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      border-radius: 20px;
+      display: inline-block;
+      margin-bottom: 1rem;
+    }
+
+    code {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.9rem;
+      color: #c084fc;
+    }
+
+    /* Pipeline mapping flow visualizer */
+    .pipeline-visual {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      margin: 2rem 0;
+      position: relative;
+    }
+
+    .pipeline-step {
+      display: flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-color);
+      padding: 1.25rem 1.5rem;
+      border-radius: 12px;
+      position: relative;
+      transition: all 0.3s;
+    }
+
+    .pipeline-step:hover {
+      border-color: rgba(59, 130, 246, 0.3);
+      transform: translateX(5px);
+    }
+
+    .step-number {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--primary-neon);
+      margin-right: 1.5rem;
+      background: rgba(59, 130, 246, 0.1);
+      width: 45px;
+      height: 45px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+    }
+
+    .step-details {
+      flex: 1;
+    }
+
+    .step-details h4 {
+      font-size: 1.1rem;
+      color: var(--text-main);
+      margin-bottom: 0.25rem;
+    }
+
+    .step-details p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .step-badge {
+      background: rgba(168, 85, 247, 0.15);
+      color: #c084fc;
+      border: 1px solid rgba(168, 85, 247, 0.3);
+      padding: 0.2rem 0.6rem;
+      font-size: 0.75rem;
+      font-family: 'Fira Code', monospace;
+      border-radius: 6px;
+      margin-left: 1rem;
+    }
+
+    .pipeline-arrow {
+      align-self: center;
+      color: var(--text-muted);
+      font-size: 1.2rem;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.3; transform: translateY(0); }
+      50% { opacity: 1; transform: translateY(3px); }
+      100% { opacity: 0.3; transform: translateY(0); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 900px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+      .sidebar {
+        position: static;
+        margin-bottom: 2rem;
+      }
+
+      .pipeline-step {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+      .step-number {
+        margin-right: 0;
+      }
+      .step-badge {
+        margin-left: 0;
+        margin-top: 0.5rem;
+        display: inline-block;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="glow-bg"></div>
+  <div class="glow-bg-2"></div>
+
+  <header>
+    <h1>GitHub Actions: Reusable Workflows Guide</h1>
+    <p>Inputs aur Outputs ko dynamic scope ke through target file tak bubble-up karne ka pure logic, simple Hinglish explanation ke saath.</p>
+  </header>
+
+  <div class="container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <h3>Sections</h3>
+      <button class="nav-btn active" onclick="switchTab(event, 'inputs-flow')">
+        <span>📥</span> 1. Inputs Path
+      </button>
+      <button class="nav-btn" onclick="switchTab(event, 'outputs-flow')">
+        <span>📤</span> 2. Outputs Bubble-up
+      </button>
+
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- SECTION 1: INPUTS PATH -->
+      <section id="inputs-flow" class="tab-content active">
+        <div class="card">
+          <span class="hinglish-tag">Inputs Flow</span>
+          <h2 class="card-title">📥 Caller se Reusable tak Arguments pass karna</h2>
+          <p class="intro-text">
+            Maan lo aapke paas ek build artifact folder hai (e.g. `dist-files`). Aapko is folder ka naam reusable workflow me pass karna hai.
+            Dekho kaise parameters transfer hote hain step-by-step:
+          </p>
+
+          <div class="pipeline-visual">
+            <div class="pipeline-step">
+              <div class="step-number">1</div>
+              <div class="step-details">
+                <h4>Caller sends argument</h4>
+                <p>use-reuse.yml file ke <code>with:</code> block me value specify ki jati hai.</p>
+              </div>
+              <div class="step-badge">artifact-name: dist-files</div>
+            </div>
+            
+            <div class="pipeline-arrow">▼</div>
+
+            <div class="pipeline-step">
+              <div class="step-number">2</div>
+              <div class="step-details">
+                <h4>Reusable receives parameters</h4>
+                <p>reusable.yml ke top configuration on <code>workflow_call.inputs</code> me variable receive hota hai.</p>
+              </div>
+              <div class="step-badge">inputs.artifact-name</div>
+            </div>
+
+            <div class="pipeline-arrow">▼</div>
+
+            <div class="pipeline-step">
+              <div class="step-number">3</div>
+              <div class="step-details">
+                <h4>Step consumes parameter</h4>
+                <p>Steps ke andhar is dynamically variable ko load karke download script chalai jati hai.</p>
+              </div>
+              <div class="step-badge">${{ inputs.artifact-name }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 class="card-title">💡 Inputs ka Feel (Hinglish Analogy)</h2>
+          <p class="intro-text">
+            Ye bilkul normal program function calling ki tarah hai:
+          </p>
+          <p class="intro-text" style="background: rgba(255, 255, 255, 0.02); padding: 1.25rem; border-radius: 8px; font-style: italic; border-left: 4px solid var(--primary-neon);">
+            "Caller file ne function call kiya: <code>reusableDeploy('dist-files')</code>. Reusable file ne function definition likhi: <code>function reusableDeploy(artifactName)</code>. Pura code chalte samay jahan bhi <code>artifactName</code> tha, wahan automatic <code>'dist-files'</code> replacement ho gaya."
+          </p>
+        </div>
+      </section>
+
+      <!-- SECTION 2: OUTPUTS BUBBLE-UP -->
+      <section id="outputs-flow" class="tab-content">
+        <div class="card">
+          <span class="hinglish-tag">Outputs Flow</span>
+          <h2 class="card-title">📤 Outputs Bubble-Up Chain</h2>
+          <p class="intro-text">
+            Ek Reusable Job ke steps ek unique VM ke inside run hote hain. Job complete hote hi wo VM delete ho jati hai.
+            Value ko bubble-up karke caller file tak laane ka 4-stage pipeline is tarah hai:
+          </p>
+
+          <div class="pipeline-visual">
+            <div class="pipeline-step">
+              <div class="step-number">1</div>
+              <div class="step-details">
+                <h4>Step Level (Save to local notepad)</h4>
+                <p>Step apna run execute karne ke baad <code>$GITHUB_OUTPUT</code> stream file me string variable save karta hai.</p>
+              </div>
+              <div class="step-badge">step-result=success</div>
+            </div>
+
+            <div class="pipeline-arrow">▼</div>
+
+            <div class="pipeline-step">
+              <div class="step-number">2</div>
+              <div class="step-details">
+                <h4>Job Level (Save to job border)</h4>
+                <p>Job ke exit-gate <code>outputs</code> block me steps ke data ko retrieve karke job output banaya jata hai.</p>
+              </div>
+              <div class="step-badge">outcome: ${{ steps.set-result... }}</div>
+            </div>
+
+            <div class="pipeline-arrow">▼</div>
+
+            <div class="pipeline-step">
+              <div class="step-number">3</div>
+              <div class="step-details">
+                <h4>Workflow Level (Save to public API)</h4>
+                <p>Workflow ke top level <code>workflow_call.outputs</code> me mapping connection configure kiya jata hai.</p>
+              </div>
+              <div class="step-badge">result: value: ${{ jobs.deploy... }}</div>
+            </div>
+
+            <div class="pipeline-arrow">▼</div>
+
+            <div class="pipeline-step">
+              <div class="step-number">4</div>
+              <div class="step-details">
+                <h4>Caller reads Return Value</h4>
+                <p>Caller workflow <code>needs.deploy.outputs.result</code> tag call karke use log print ya script run me print karta hai.</p>
+              </div>
+              <div class="step-badge">${{ needs.deploy.outputs.result }}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+
+    </main>
+  </div>
+
+  <script>
+    function switchTab(event, tabId) {
+      const buttons = document.querySelectorAll('.nav-btn');
+      buttons.forEach(btn => btn.classList.remove('active'));
+
+      const contents = document.querySelectorAll('.tab-content');
+      contents.forEach(content => content.classList.remove('active'));
+
+      event.currentTarget.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+      
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+
+  </script>
+</body>
+</html>
