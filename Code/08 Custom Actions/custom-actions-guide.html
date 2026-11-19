@@ -1,0 +1,3038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub Actions: Custom Actions Complete Guide</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --bg-panel: #0f1626;
+      --card-bg: rgba(17, 24, 39, 0.72);
+      --border-color: rgba(255, 255, 255, 0.09);
+      --primary-neon: #3b82f6;
+      --secondary-neon: #a855f7;
+      --pink-neon: #ec4899;
+      --success-neon: #10b981;
+      --warn-neon: #f59e0b;
+      --danger-neon: #ef4444;
+      --cyan-neon: #06b6d4;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --highlight-gradient: linear-gradient(135deg, var(--primary-neon), var(--secondary-neon));
+      --code-bg: #070b14;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow-x: hidden;
+      min-height: 100vh;
+      line-height: 1.65;
+    }
+
+    /* Ambient background glows */
+    .glow-bg {
+      position: fixed;
+      top: -15%;
+      right: 5%;
+      width: 50vw;
+      height: 50vw;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.14) 0%, rgba(168, 85, 247, 0.06) 50%, transparent 100%);
+      filter: blur(90px);
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .glow-bg-2 {
+      position: fixed;
+      bottom: -10%;
+      left: -5%;
+      width: 45vw;
+      height: 45vw;
+      background: radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, rgba(236, 72, 153, 0.05) 50%, transparent 100%);
+      filter: blur(100px);
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    /* Header */
+    header {
+      padding: 3.5rem 2rem 1.75rem;
+      text-align: center;
+      position: relative;
+    }
+
+    .hero-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 1rem;
+      border-radius: 999px;
+      background: rgba(168, 85, 247, 0.14);
+      border: 1px solid rgba(168, 85, 247, 0.35);
+      color: #d8b4fe;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      margin-bottom: 1rem;
+    }
+
+    header h1 {
+      font-size: clamp(2.1rem, 4.5vw, 3.4rem);
+      font-weight: 800;
+      background: linear-gradient(to right, #ffffff, #60a5fa, #c084fc, #f472b6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.85rem;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+    }
+
+    header p {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      max-width: 820px;
+      margin: 0 auto;
+      font-weight: 300;
+    }
+
+    /* Main Layout */
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 1.5rem 2rem 4rem;
+      display: grid;
+      grid-template-columns: 290px 1fr;
+      gap: 2.5rem;
+      align-items: start;
+    }
+
+    /* Sidebar Navigation */
+    .sidebar {
+      position: sticky;
+      top: 1.5rem;
+      background: var(--card-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border-color);
+      border-radius: 18px;
+      padding: 1.35rem;
+      z-index: 10;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+    }
+
+    .sidebar h3 {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+      font-weight: 700;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.6rem;
+    }
+
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      padding: 0.8rem 0.9rem;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      border-radius: 10px;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      margin-bottom: 0.4rem;
+      gap: 0.7rem;
+    }
+
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-main);
+      transform: translateX(4px);
+    }
+
+    .nav-btn.active {
+      background: var(--highlight-gradient);
+      color: #fff;
+      box-shadow: 0 4px 18px rgba(59, 130, 246, 0.3);
+    }
+
+    .nav-btn .nav-icon {
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    .nav-progress {
+      margin-top: 1.1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-color);
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .progress-bar-track {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      margin-top: 0.45rem;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 14.3%;
+      background: var(--highlight-gradient);
+      border-radius: 999px;
+      transition: width 0.35s ease;
+    }
+
+    /* Main Content */
+    .main-content {
+      min-width: 0;
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 2.2rem;
+      margin-bottom: 1.85rem;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+      transition: border-color 0.3s;
+    }
+
+    .card:hover {
+      border-color: rgba(59, 130, 246, 0.35);
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--highlight-gradient);
+    }
+
+    .card.card-purple::before { background: linear-gradient(180deg, #a855f7, #ec4899); }
+    .card.card-green::before { background: linear-gradient(180deg, #10b981, #06b6d4); }
+    .card.card-amber::before { background: linear-gradient(180deg, #f59e0b, #ef4444); }
+    .card.card-cyan::before { background: linear-gradient(180deg, #06b6d4, #3b82f6); }
+
+    .card-title {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 1.15rem;
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      flex-wrap: wrap;
+      line-height: 1.3;
+    }
+
+    .sub-heading {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #e5e7eb;
+      margin: 1.5rem 0 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    p.intro-text {
+      font-size: 1.05rem;
+      color: #d1d5db;
+      margin-bottom: 1.2rem;
+    }
+
+    p.intro-text strong {
+      color: #ffffff;
+    }
+
+    .hinglish-tag {
+      background: rgba(59, 130, 246, 0.15);
+      color: #93c5fd;
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      padding: 0.22rem 0.75rem;
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border-radius: 999px;
+      display: inline-block;
+      margin-bottom: 0.85rem;
+    }
+
+    .hinglish-tag.tag-purple {
+      background: rgba(168, 85, 247, 0.16);
+      color: #d8b4fe;
+      border-color: rgba(168, 85, 247, 0.38);
+    }
+
+    .hinglish-tag.tag-green {
+      background: rgba(16, 185, 129, 0.15);
+      color: #6ee7b7;
+      border-color: rgba(16, 185, 129, 0.35);
+    }
+
+    .hinglish-tag.tag-amber {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fcd34d;
+      border-color: rgba(245, 158, 11, 0.35);
+    }
+
+    .hinglish-tag.tag-cyan {
+      background: rgba(6, 182, 212, 0.15);
+      color: #67e8f9;
+      border-color: rgba(6, 182, 212, 0.35);
+    }
+
+    .hinglish-tag.tag-pink {
+      background: rgba(236, 72, 153, 0.16);
+      color: #f9a8d4;
+      border-color: rgba(236, 72, 153, 0.38);
+    }
+
+    /* Inline code */
+    code {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.87rem;
+      color: #c084fc;
+      background: rgba(168, 85, 247, 0.1);
+      padding: 0.12rem 0.42rem;
+      border-radius: 6px;
+      border: 1px solid rgba(168, 85, 247, 0.18);
+    }
+
+    /* Analogy / Callout Boxes */
+    .analogy-box {
+      background: rgba(59, 130, 246, 0.07);
+      border: 1px solid rgba(59, 130, 246, 0.22);
+      border-left: 4px solid var(--primary-neon);
+      padding: 1.2rem 1.4rem;
+      border-radius: 12px;
+      margin: 1.25rem 0;
+      font-size: 1rem;
+      color: #e5e7eb;
+    }
+
+    .analogy-box.warn {
+      background: rgba(245, 158, 11, 0.08);
+      border-color: rgba(245, 158, 11, 0.25);
+      border-left-color: var(--warn-neon);
+    }
+
+    .analogy-box.danger {
+      background: rgba(239, 68, 68, 0.08);
+      border-color: rgba(239, 68, 68, 0.25);
+      border-left-color: var(--danger-neon);
+    }
+
+    .analogy-box.success {
+      background: rgba(16, 185, 129, 0.08);
+      border-color: rgba(16, 185, 129, 0.25);
+      border-left-color: var(--success-neon);
+    }
+
+    .analogy-box.purple {
+      background: rgba(168, 85, 247, 0.08);
+      border-color: rgba(168, 85, 247, 0.25);
+      border-left-color: var(--secondary-neon);
+    }
+
+    .analogy-title {
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      color: #fff;
+    }
+
+    /* Code Blocks */
+    .code-wrapper {
+      background: var(--code-bg);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      overflow: hidden;
+      margin: 1.15rem 0;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.65rem 1rem;
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .code-filepath {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.8rem;
+      color: #93c5fd;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .code-dots {
+      display: inline-flex;
+      gap: 5px;
+      margin-right: 0.35rem;
+    }
+
+    .code-dots span {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+    }
+    .code-dots span:nth-child(1) { background: #ef4444; }
+    .code-dots span:nth-child(2) { background: #f59e0b; }
+    .code-dots span:nth-child(3) { background: #10b981; }
+
+    .copy-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #d1d5db;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 0.28rem 0.7rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .copy-btn:hover {
+      background: rgba(59, 130, 246, 0.22);
+      border-color: rgba(59, 130, 246, 0.5);
+      color: #fff;
+    }
+
+    .copy-btn.copied {
+      background: rgba(16, 185, 129, 0.22);
+      border-color: rgba(16, 185, 129, 0.5);
+      color: #6ee7b7;
+    }
+
+    pre {
+      padding: 1.15rem 1.25rem;
+      overflow-x: auto;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.84rem;
+      line-height: 1.65;
+      color: #e2e8f0;
+      tab-size: 2;
+    }
+
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: inherit;
+      font-size: inherit;
+    }
+
+    /* Syntax highlight spans */
+    .y-key { color: #60a5fa; }
+    .y-str { color: #34d399; }
+    .y-expr { color: #f472b6; font-weight: 500; }
+    .y-com { color: #64748b; font-style: italic; }
+    .y-num { color: #fbbf24; }
+    .y-kw { color: #c084fc; font-weight: 600; }
+    .y-fn { color: #38bdf8; }
+    .y-hl {
+      display: block;
+      background: rgba(59, 130, 246, 0.14);
+      margin: 0 -1.25rem;
+      padding: 0 1.25rem;
+      border-left: 3px solid #3b82f6;
+    }
+    .y-hl-green {
+      display: block;
+      background: rgba(16, 185, 129, 0.13);
+      margin: 0 -1.25rem;
+      padding: 0 1.25rem;
+      border-left: 3px solid #10b981;
+    }
+    .y-hl-red {
+      display: block;
+      background: rgba(239, 68, 68, 0.12);
+      margin: 0 -1.25rem;
+      padding: 0 1.25rem;
+      border-left: 3px solid #ef4444;
+    }
+    .y-hl-amber {
+      display: block;
+      background: rgba(245, 158, 11, 0.13);
+      margin: 0 -1.25rem;
+      padding: 0 1.25rem;
+      border-left: 3px solid #f59e0b;
+    }
+
+    /* Pipeline Visualizer (Same DNA as Reusable Workflows Guide!) */
+    .pipeline-visual {
+      display: flex;
+      flex-direction: column;
+      gap: 0.95rem;
+      margin: 1.5rem 0;
+      position: relative;
+    }
+
+    .pipeline-step {
+      display: flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid var(--border-color);
+      padding: 1.15rem 1.35rem;
+      border-radius: 14px;
+      position: relative;
+      transition: all 0.25s;
+      gap: 1.1rem;
+    }
+
+    .pipeline-step:hover {
+      border-color: rgba(59, 130, 246, 0.4);
+      transform: translateX(4px);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .pipeline-step.step-success {
+      border-color: rgba(16, 185, 129, 0.4);
+      background: rgba(16, 185, 129, 0.06);
+    }
+
+    .pipeline-step.step-skipped {
+      opacity: 0.5;
+      border-style: dashed;
+    }
+
+    .step-number {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #60a5fa;
+      background: rgba(59, 130, 246, 0.14);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      width: 42px;
+      height: 42px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+    }
+
+    .step-number.purple { color: #d8b4fe; background: rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.35); }
+    .step-number.green { color: #6ee7b7; background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.35); }
+    .step-number.amber { color: #fcd34d; background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.35); }
+
+    .step-details {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .step-details h4 {
+      font-size: 1.05rem;
+      color: var(--text-main);
+      margin-bottom: 0.2rem;
+    }
+
+    .step-details p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .step-badge {
+      background: rgba(168, 85, 247, 0.15);
+      color: #d8b4fe;
+      border: 1px solid rgba(168, 85, 247, 0.32);
+      padding: 0.28rem 0.65rem;
+      font-size: 0.76rem;
+      font-family: 'Fira Code', monospace;
+      border-radius: 8px;
+      flex-shrink: 0;
+      max-width: 100%;
+      word-break: break-all;
+    }
+
+    .step-badge.green {
+      background: rgba(16, 185, 129, 0.15);
+      color: #6ee7b7;
+      border-color: rgba(16, 185, 129, 0.35);
+    }
+
+    .step-badge.amber {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fcd34d;
+      border-color: rgba(245, 158, 11, 0.35);
+    }
+
+    .step-badge.red {
+      background: rgba(239, 68, 68, 0.15);
+      color: #fca5a5;
+      border-color: rgba(239, 68, 68, 0.35);
+    }
+
+    .pipeline-arrow {
+      align-self: center;
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      animation: pulse 2s infinite;
+      line-height: 1;
+    }
+
+    /* Grids */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.25rem;
+      margin: 1.25rem 0;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1.2rem;
+      margin: 1.4rem 0;
+    }
+
+    /* Action Type Cards (Inspired by user's screenshot!) */
+    .type-card {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--border-color);
+      border-radius: 18px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+      cursor: pointer;
+    }
+
+    .type-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .type-card.type-js { border-top: 4px solid #6366f1; }
+    .type-card.type-js:hover { border-color: #818cf8; box-shadow: 0 10px 30px rgba(99, 102, 241, 0.2); }
+
+    .type-card.type-docker { border-top: 4px solid #06b6d4; }
+    .type-card.type-docker:hover { border-color: #22d3ee; box-shadow: 0 10px 30px rgba(6, 182, 212, 0.2); }
+
+    .type-card.type-composite { border-top: 4px solid #d946ef; }
+    .type-card.type-composite:hover { border-color: #e879f9; box-shadow: 0 10px 30px rgba(217, 70, 239, 0.2); }
+
+    .type-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.55rem;
+      font-weight: 800;
+      margin-bottom: 0.2rem;
+    }
+
+    .type-js .type-icon { background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.45); font-family: 'Fira Code', monospace; }
+    .type-docker .type-icon { background: rgba(6, 182, 212, 0.2); color: #67e8f9; border: 1px solid rgba(6, 182, 212, 0.45); }
+    .type-composite .type-icon { background: rgba(217, 70, 239, 0.2); color: #f0abfc; border: 1px solid rgba(217, 70, 239, 0.45); }
+
+    .type-card h3 {
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    .type-pill-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      flex: 1;
+    }
+
+    .type-pill-list li {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 0.55rem 0.75rem;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      color: #d1d5db;
+    }
+
+    .type-cta {
+      margin-top: 0.35rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #93c5fd;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    /* Mini info boxes */
+    .mini-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 1.25rem;
+    }
+
+    .mini-box h4 {
+      font-size: 1.05rem;
+      margin-bottom: 0.5rem;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .mini-box p, .mini-box li {
+      font-size: 0.92rem;
+      color: #cbd5e1;
+    }
+
+    .mini-box ul {
+      padding-left: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    /* Interactive Toggle / Sub-tabs */
+    .sub-tabs {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+
+    .sub-tab-btn {
+      padding: 0.55rem 1rem;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-muted);
+      font-family: 'Fira Code', monospace;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .sub-tab-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    .sub-tab-btn.active {
+      background: var(--highlight-gradient);
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
+    }
+
+    .sub-panel {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .sub-panel.active {
+      display: block;
+    }
+
+    /* Simulator Panel */
+    .sim-box {
+      background: rgba(7, 11, 20, 0.85);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin: 1.4rem 0;
+    }
+
+    .sim-controls {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .sim-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .sim-label {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #cbd5e1;
+    }
+
+    .sim-toggle {
+      padding: 0.4rem 0.85rem;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.04);
+      color: #9ca3af;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .sim-toggle.active {
+      background: rgba(59, 130, 246, 0.25);
+      border-color: #60a5fa;
+      color: #fff;
+    }
+
+    .sim-toggle.active-green {
+      background: rgba(16, 185, 129, 0.25);
+      border-color: #34d399;
+      color: #6ee7b7;
+    }
+
+    .sim-toggle.active-amber {
+      background: rgba(245, 158, 11, 0.22);
+      border-color: #fbbf24;
+      color: #fde68a;
+    }
+
+    .sim-terminal {
+      background: #04070d;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.82rem;
+      line-height: 1.7;
+      color: #94a3b8;
+      margin-top: 1rem;
+    }
+
+    .term-green { color: #34d399; }
+    .term-blue { color: #60a5fa; }
+    .term-amber { color: #fbbf24; }
+    .term-pink { color: #f472b6; }
+    .term-red { color: #f87171; }
+
+    /* Folder Tree */
+    .folder-tree {
+      background: var(--code-bg);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      padding: 1.25rem 1.5rem;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.84rem;
+      line-height: 1.85;
+      white-space: pre;
+      overflow-x: auto;
+    }
+
+    .tree-dir { color: #60a5fa; font-weight: 600; }
+    .tree-file { color: #e2e8f0; }
+    .tree-tag {
+      display: inline-block;
+      margin-left: 0.6rem;
+      padding: 0.08rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 600;
+    }
+    .tree-tag.t-comp { background: rgba(217, 70, 239, 0.18); color: #f0abfc; }
+    .tree-tag.t-js { background: rgba(99, 102, 241, 0.22); color: #a5b4fc; }
+    .tree-tag.t-dock { background: rgba(6, 182, 212, 0.2); color: #67e8f9; }
+    .tree-tag.t-wf { background: rgba(16, 185, 129, 0.18); color: #6ee7b7; }
+
+    /* Table */
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 14px;
+      border: 1px solid var(--border-color);
+      margin: 1.25rem 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+    }
+
+    th, td {
+      padding: 0.9rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      vertical-align: top;
+    }
+
+    th {
+      background: rgba(59, 130, 246, 0.12);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.86rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+    /* Line-by-line annotation list */
+    .explain-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
+      margin: 1rem 0;
+    }
+
+    .explain-item {
+      display: flex;
+      gap: 0.85rem;
+      align-items: flex-start;
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 0.85rem 1rem;
+      border-radius: 12px;
+    }
+
+    .line-pill {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: #93c5fd;
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      padding: 0.18rem 0.55rem;
+      border-radius: 6px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .explain-item p {
+      font-size: 0.93rem;
+      color: #d1d5db;
+    }
+
+    /* VM / Docker Architecture visual */
+    .arch-diagram {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 1rem;
+      align-items: center;
+      margin: 1.4rem 0;
+    }
+
+    .arch-box {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      border-radius: 14px;
+      padding: 1.2rem;
+    }
+
+    .arch-box.docker-box {
+      border-color: rgba(6, 182, 212, 0.45);
+      background: rgba(6, 182, 212, 0.06);
+    }
+
+    .arch-box h4 {
+      font-size: 0.98rem;
+      margin-bottom: 0.65rem;
+      color: #fff;
+    }
+
+    .arch-item {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      padding: 0.45rem 0.7rem;
+      border-radius: 8px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.78rem;
+      margin-bottom: 0.45rem;
+      color: #e2e8f0;
+    }
+
+    .arch-bridge {
+      text-align: center;
+      font-size: 0.78rem;
+      color: #67e8f9;
+      font-weight: 700;
+      padding: 0.5rem;
+    }
+
+    /* Decision Picker & Quiz */
+    .quiz-card {
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 1.35rem;
+      margin-bottom: 1rem;
+    }
+
+    .quiz-q {
+      font-size: 1.02rem;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 0.85rem;
+    }
+
+    .quiz-opts {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 0.6rem;
+    }
+
+    .quiz-opt {
+      padding: 0.7rem 0.9rem;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.03);
+      color: #d1d5db;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 500;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .quiz-opt:hover {
+      background: rgba(59, 130, 246, 0.14);
+      border-color: rgba(59, 130, 246, 0.45);
+      color: #fff;
+    }
+
+    .quiz-opt.correct {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: #10b981;
+      color: #6ee7b7;
+      font-weight: 700;
+    }
+
+    .quiz-opt.wrong {
+      background: rgba(239, 68, 68, 0.18);
+      border-color: #ef4444;
+      color: #fca5a5;
+    }
+
+    .quiz-feedback {
+      margin-top: 0.75rem;
+      font-size: 0.9rem;
+      padding: 0.7rem 0.95rem;
+      border-radius: 10px;
+      display: none;
+    }
+
+    .quiz-feedback.show { display: block; }
+    .quiz-feedback.ok { background: rgba(16, 185, 129, 0.12); color: #a7f3d0; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .quiz-feedback.no { background: rgba(239, 68, 68, 0.12); color: #fecaca; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+    /* Bottom Next/Prev Navigation */
+    .section-footer-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 1.5rem;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .pager-btn {
+      padding: 0.8rem 1.35rem;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.04);
+      color: #fff;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s;
+    }
+
+    .pager-btn:hover {
+      background: rgba(59, 130, 246, 0.2);
+      border-color: rgba(59, 130, 246, 0.5);
+      transform: translateY(-2px);
+    }
+
+    .pager-btn.primary {
+      background: var(--highlight-gradient);
+      border-color: transparent;
+      box-shadow: 0 4px 18px rgba(59, 130, 246, 0.3);
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.35; transform: translateY(0); }
+      50% { opacity: 1; transform: translateY(3px); }
+      100% { opacity: 0.35; transform: translateY(0); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 980px) {
+      .container {
+        grid-template-columns: 1fr;
+        padding: 1rem 1.2rem 3rem;
+      }
+      .sidebar {
+        position: static;
+      }
+      .grid-3, .grid-2, .arch-diagram {
+        grid-template-columns: 1fr;
+      }
+      .card {
+        padding: 1.5rem;
+      }
+      .pipeline-step {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="glow-bg"></div>
+  <div class="glow-bg-2"></div>
+
+  <header>
+    <div class="hero-pill">⚡ Section 08 · Complete Hands-On Mastery</div>
+    <h1>GitHub Actions: Custom Actions Guide</h1>
+    <p>Custom Actions kya hote hain, unki need kyun padi, aur Composite, JavaScript &amp; Docker Actions andar se kaise kaam karte hain — tumhare exact project code ke saath, pure Hinglish feel mein!</p>
+  </header>
+
+  <div class="container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <h3>Learning Roadmap</h3>
+      <button class="nav-btn active" data-tab="why-need" onclick="switchTab('why-need')">
+        <span class="nav-icon">💡</span> 1. Kya Hai &amp; Need Kya Hai?
+      </button>
+      <button class="nav-btn" data-tab="anatomy-types" onclick="switchTab('anatomy-types')">
+        <span class="nav-icon">🧬</span> 2. Anatomy &amp; 3 Types
+      </button>
+      <button class="nav-btn" data-tab="composite" onclick="switchTab('composite')">
+        <span class="nav-icon">🧩</span> 3. Composite Action
+      </button>
+      <button class="nav-btn" data-tab="javascript" onclick="switchTab('javascript')">
+        <span class="nav-icon">⚡</span> 4. JavaScript Action
+      </button>
+      <button class="nav-btn" data-tab="docker" onclick="switchTab('docker')">
+        <span class="nav-icon">🐳</span> 5. Docker Action
+      </button>
+      <button class="nav-btn" data-tab="full-picture" onclick="switchTab('full-picture')">
+        <span class="nav-icon">🚀</span> 6. Full Pipeline &amp; Swap Magic
+      </button>
+      <button class="nav-btn" data-tab="cheatsheet-quiz" onclick="switchTab('cheatsheet-quiz')">
+        <span class="nav-icon">🎯</span> 7. Gotchas, Sharing &amp; Quiz
+      </button>
+
+      <div class="nav-progress">
+        <div style="display:flex; justify-content:space-between;">
+          <span>Progress</span>
+          <span id="progress-label">1 / 7</span>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="progress-fill"></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+
+      <!-- =============================================================== -->
+      <!-- TAB 1: WHY & NEED                                               -->
+      <!-- =============================================================== -->
+      <section id="why-need" class="tab-content active">
+        <div class="card">
+          <span class="hinglish-tag">Sabse Pehle — Real Feel Lo!</span>
+          <h2 class="card-title">💡 Custom Action Aakhir Hota Kya Hai?</h2>
+          <p class="intro-text">
+            Sach bataun? Tum <strong>pehle din se Custom Actions use kar rahe ho!</strong> Jab tum workflow mein likhte ho:
+            <code>uses: actions/checkout@v3</code> ya <code>uses: actions/cache@v3</code> — wo sab <strong>Custom Actions hi hain!</strong>
+            Bas farq itna hai ki unko GitHub ki team ya community ne banaya tha.
+          </p>
+          <p class="intro-text">
+            Jab <strong>tum khud apna reusable step block</strong> banate ho (chahe YAML steps combine karke, ya JavaScript likh ke, ya Python/Docker mein wrap karke) aur usse <code>uses: ./.github/actions/mera-action</code> bol ke call karte ho — wahi <strong>Custom Action</strong> hai!
+          </p>
+
+          <div class="analogy-box">
+            <div class="analogy-title">🧠 Simple Real-Life Analogy</div>
+            JavaScript mein jab same 10 lines of code 4 jagah likhna padta hai, tum kya karte ho? <strong>Ek Function ya npm Package bana lete ho</strong> aur bas 1 line mein call kar dete ho!<br><br>
+            Bilkul waise hi GitHub Actions mein jab same steps ya complex logic (jaise caching + install, ya AWS S3 deploy) bar-bar likhna pade, tum uska ek <strong>Custom Action (LEGO Block)</strong> bana lete ho aur workflow mein bas <code>uses:</code> se chipka dete ho!
+          </div>
+        </div>
+
+        <div class="card card-amber">
+          <span class="hinglish-tag tag-amber">The Real Problem (Tumhare Project Se!)</span>
+          <h2 class="card-title">😫 Need Kya Padi? Before vs After Dekho!</h2>
+          <p class="intro-text">
+            Apne <code>01 Starting Project/.github/workflows/deploy.yml</code> ko dekho. Usme <strong>2 badi problems</strong> thi:
+            <br>1️⃣ <strong>Copy-Paste Hell:</strong> <code>lint</code>, <code>test</code>, aur <code>build</code> — teeno jobs mein wahi 10 lines (cache + install) bar-bar copy-paste ho rahi thi! Kal ko Node cache key change karni ho, toh 3 jagah edit karna padega.
+            <br>2️⃣ <strong>Complex Logic in YAML:</strong> <code>deploy</code> job mein agar AWS S3 pe files upload karni hain, MIME types set karne hain, live URL return karna hai — wo sab YAML ke <code>run:</code> block mein likhna nightmare ban jaata hai!
+          </p>
+
+          <div class="sub-tabs">
+            <button class="sub-tab-btn active" onclick="switchSubTab(this, 'ba-before')">❌ Before (01 Starting Project)</button>
+            <button class="sub-tab-btn" onclick="switchSubTab(this, 'ba-after')">✅ After (03 Finished Project)</button>
+          </div>
+
+          <div id="ba-before" class="sub-panel active">
+            <div class="code-wrapper">
+              <div class="code-header">
+                <div class="code-filepath"><span class="code-dots"><span></span><span></span><span></span></span>01 Starting Project/.github/workflows/deploy.yml</div>
+                <span class="step-badge red">3x Copy-Paste!</span>
+              </div>
+              <pre><code><span class="y-key">jobs</span>:
+  <span class="y-key">lint</span>:
+    <span class="y-key">steps</span>:
+      - <span class="y-key">uses</span>: <span class="y-str">actions/checkout@v3</span>
+<span class="y-hl-red">      - <span class="y-key">name</span>: <span class="y-str">Cache dependencies</span>          <span class="y-com"># 🔁 Copy #1</span>
+        <span class="y-key">id</span>: <span class="y-str">cache</span>
+        <span class="y-key">uses</span>: <span class="y-str">actions/cache@v3</span>
+        <span class="y-key">with</span>:
+          <span class="y-key">path</span>: <span class="y-str">node_modules</span>
+          <span class="y-key">key</span>: <span class="y-str">deps-node-modules-<span class="y-expr">${{ hashFiles('**/package-lock.json') }}</span></span>
+      - <span class="y-key">name</span>: <span class="y-str">Install dependencies</span>
+        <span class="y-key">if</span>: <span class="y-expr">steps.cache.outputs.cache-hit != 'true'</span>
+        <span class="y-key">run</span>: <span class="y-str">npm ci</span></span>
+      - <span class="y-key">run</span>: <span class="y-str">npm run lint</span>
+
+  <span class="y-key">test</span>:
+    <span class="y-key">steps</span>:
+      - <span class="y-key">uses</span>: <span class="y-str">actions/checkout@v3</span>
+<span class="y-hl-red">      <span class="y-com"># 🔁 EXACT WAHI 10 LINES COPY #2 ...</span></span>
+      - <span class="y-key">run</span>: <span class="y-str">npm run test</span>
+
+  <span class="y-key">build</span>:
+    <span class="y-key">steps</span>:
+      - <span class="y-key">uses</span>: <span class="y-str">actions/checkout@v3</span>
+<span class="y-hl-red">      <span class="y-com"># 🔁 EXACT WAHI 10 LINES COPY #3 ...</span></span>
+      - <span class="y-key">run</span>: <span class="y-str">npm run build</span>
+
+  <span class="y-key">deploy</span>:
+    <span class="y-key">steps</span>:
+      - <span class="y-key">name</span>: <span class="y-str">Deploy site</span>
+<span class="y-hl-amber">        <span class="y-key">run</span>: <span class="y-str">echo "Deploying..."</span>  <span class="y-com"># 😅 Real S3 upload kaise likhein clean tareeke se?</span></span></code></pre>
+            </div>
+          </div>
+
+          <div id="ba-after" class="sub-panel">
+            <div class="code-wrapper">
+              <div class="code-header">
+                <div class="code-filepath"><span class="code-dots"><span></span><span></span><span></span></span>03 Finished Project/.github/workflows/deploy.yml</div>
+                <span class="step-badge green">Clean &amp; Modular!</span>
+              </div>
+              <pre><code><span class="y-key">jobs</span>:
+  <span class="y-key">lint</span>:
+    <span class="y-key">steps</span>:
+      - <span class="y-key">uses</span>: <span class="y-str">actions/checkout@v3</span>
+<span class="y-hl-green">      - <span class="y-key">name</span>: <span class="y-str">Load &amp; cache dependencies</span>
+        <span class="y-key">id</span>: <span class="y-str">cache-deps</span>
+        <span class="y-key">uses</span>: <span class="y-str">./.github/actions/cached-deps</span>   <span class="y-com"># 🧩 Apna Composite Action!</span>
+        <span class="y-key">with</span>:
+          <span class="y-key">caching</span>: <span class="y-str">'false'</span></span>
+      - <span class="y-key">run</span>: <span class="y-str">echo "Cache used? <span class="y-expr">${{ steps.cache-deps.outputs.used-cache }}</span>"</span>
+      - <span class="y-key">run</span>: <span class="y-str">npm run lint</span>
+
+  <span class="y-key">test</span>:
+    <span class="y-key">steps</span>:
+      - <span class="y-key">uses</span>: <span class="y-str">actions/checkout@v3</span>
+<span class="y-hl-green">      - <span class="y-key">uses</span>: <span class="y-str">./.github/actions/cached-deps</span>   <span class="y-com"># ✨ Bas 1 line!</span></span>
+      - <span class="y-key">run</span>: <span class="y-str">npm run test</span>
+
+  <span class="y-key">build</span>:
+    <span class="y-key">steps</span>:
+      - <span class="y-key">uses</span>: <span class="y-str">actions/checkout@v3</span>
+<span class="y-hl-green">      - <span class="y-key">uses</span>: <span class="y-str">./.github/actions/cached-deps</span>   <span class="y-com"># ✨ Bas 1 line!</span></span>
+      - <span class="y-key">run</span>: <span class="y-str">npm run build</span>
+
+  <span class="y-key">deploy</span>:
+    <span class="y-key">steps</span>:
+      - <span class="y-key">uses</span>: <span class="y-str">actions/checkout@v3</span>
+      - <span class="y-key">uses</span>: <span class="y-str">actions/download-artifact@v3</span>
+        <span class="y-key">with</span>: { <span class="y-key">name</span>: <span class="y-str">dist-files</span>, <span class="y-key">path</span>: <span class="y-str">./dist</span> }
+<span class="y-hl-green">      - <span class="y-key">name</span>: <span class="y-str">Deploy site</span>
+        <span class="y-key">id</span>: <span class="y-str">deploy</span>
+        <span class="y-key">uses</span>: <span class="y-str">./.github/actions/deploy-s3-docker</span>  <span class="y-com"># 🐳 (ya deploy-s3-javascript ⚡)</span>
+        <span class="y-key">with</span>:
+          <span class="y-key">bucket</span>: <span class="y-str">gha-security-hosting-demo</span>
+          <span class="y-key">dist-folder</span>: <span class="y-str">./dist</span></span>
+      - <span class="y-key">run</span>: <span class="y-str">echo "Live URL: <span class="y-expr">${{ steps.deploy.outputs.website-url }}</span>"</span></code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card-purple">
+          <span class="hinglish-tag tag-purple">Sabse Bada Confusion Clear Karo!</span>
+          <h2 class="card-title">⚔️ Reusable Workflow vs Custom Action — Farq Kya Hai?</h2>
+          <p class="intro-text">
+            Abhi tumne Section 06 mein <strong>Reusable Workflows</strong> padha tha. Dimaag mein aata hoga: <em>"Bhai jab Reusable Workflow already code reuse karwa raha tha, toh Custom Action ki kya zaroorat thi?!"</em>
+          </p>
+
+          <div class="grid-2">
+            <div class="mini-box" style="border-color: rgba(59, 130, 246, 0.35);">
+              <h4>🏗️ Reusable Workflow (<code>workflow_call</code>)</h4>
+              <ul>
+                <li><strong>Scope:</strong> Poora <strong>JOB</strong> (ya multiple jobs) reuse karta hai.</li>
+                <li><strong>Kahan call hota hai:</strong> <code>jobs.&lt;job-id&gt;.uses:</code> par.</li>
+                <li><strong>Runner VM:</strong> Apni <strong>alag nayi VM</strong> pe chalta hai! Isliye file share karne ke liye <code>upload-artifact</code> / <code>download-artifact</code> lagta hai.</li>
+                <li><strong>Language:</strong> Sirf YAML workflow syntax.</li>
+                <li><strong>Analogy:</strong> 🏠 Poora <strong>alag kitchen</strong> hire kar lena.</li>
+              </ul>
+            </div>
+
+            <div class="mini-box" style="border-color: rgba(168, 85, 247, 0.45);">
+              <h4>🧩 Custom Action (<code>action.yml</code>)</h4>
+              <ul>
+                <li><strong>Scope:</strong> Job ke andar ke <strong>STEPS</strong> reuse karta hai.</li>
+                <li><strong>Kahan call hota hai:</strong> <code>jobs.&lt;job-id&gt;.steps[].uses:</code> par.</li>
+                <li><strong>Runner VM:</strong> <strong>USI SAME VM</strong> mein chalta hai! <code>node_modules</code> ya <code>./dist</code> directly agle step ko mil jaata hai — zero artifact overhead!</li>
+                <li><strong>Language:</strong> YAML (Composite), JavaScript (Node), ya koi bhi language (Docker — Python, Go, Rust...).</li>
+                <li><strong>Analogy:</strong> 🔌 Usi kitchen ke andar ka <strong>Mixer-Grinder</strong>!</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="analogy-box success">
+            <div class="analogy-title">✨ Golden Rule Yaad Rakhna</div>
+            Socho agar <code>cached-deps</code> ko Reusable Workflow banate, toh wo alag VM mein <code>npm ci</code> karta aur VM delete ho jaati — <code>lint</code> job ko <code>node_modules</code> kabhi milta hi nahi! Isliye <strong>same job ke andar share hone wale steps = Custom Action!</strong>
+          </div>
+        </div>
+
+        <div class="section-footer-nav">
+          <div></div>
+          <button class="pager-btn primary" onclick="switchTab('anatomy-types')">Next: Anatomy &amp; 3 Types →</button>
+        </div>
+      </section>
+
+      <!-- =============================================================== -->
+      <!-- TAB 2: ANATOMY & 3 TYPES                                        -->
+      <!-- =============================================================== -->
+      <section id="anatomy-types" class="tab-content">
+        <div class="card">
+          <span class="hinglish-tag">Folder Structure &amp; Contract</span>
+          <h2 class="card-title">🧬 Custom Action Banta Kaise Hai? (Anatomy)</h2>
+          <p class="intro-text">
+            Kisi bhi folder ko Custom Action banane ke liye sirf <strong>EK mandatory file</strong> chahiye: <code>action.yml</code> (ya <code>action.yaml</code>). Ye file GitHub ko batati hai:
+            <em>"Main kaun hoon, mujhe kya inputs chahiye, main kya outputs dunga, aur mujhe run kaise karna hai!"</em>
+          </p>
+
+          <div class="folder-tree"><span class="tree-dir">03 Finished Project/</span>
+└── <span class="tree-dir">.github/</span>
+    ├── <span class="tree-dir">workflows/</span>
+    │   └── <span class="tree-file">deploy.yml</span> <span class="tree-tag t-wf">Caller Workflow</span>
+    └── <span class="tree-dir">actions/</span>  <span class="y-com"># ← Standard folder for local custom actions</span>
+        ├── <span class="tree-dir">cached-deps/</span>
+        │   └── <span class="tree-file">action.yml</span> <span class="tree-tag t-comp">Type 1: Composite</span>
+        ├── <span class="tree-dir">deploy-s3-javascript/</span>
+        │   ├── <span class="tree-file">action.yml</span> <span class="tree-tag t-js">Type 2: JavaScript</span>
+        │   ├── <span class="tree-file">main.js</span>
+        │   ├── <span class="tree-file">package.json</span>
+        │   └── <span class="tree-dir">node_modules/</span>  <span class="y-com"># ← Committed so runner has @actions/core!</span>
+        └── <span class="tree-dir">deploy-s3-docker/</span>
+            ├── <span class="tree-file">action.yml</span> <span class="tree-tag t-dock">Type 3: Docker</span>
+            ├── <span class="tree-file">Dockerfile</span>
+            ├── <span class="tree-file">deployment.py</span>
+            └── <span class="tree-file">requirements.txt</span></div>
+
+          <div class="analogy-box danger">
+            <div class="analogy-title">🚨 #1 Beginner Mistake: Checkout Bhool Jaana!</div>
+            Jab tum <strong>local custom action</strong> call karte ho (<code>uses: ./.github/actions/cached-deps</code>), toh usse pehle <code>uses: actions/checkout@v3</code> chalana <strong>100% COMPULSORY</strong> hai!<br>
+            <strong>Kyun?</strong> Kyunki runner ek bilkul khaali Ubuntu VM hoti hai. Jab tak tum repo checkout nahi karoge, VM ke disk pe <code>./.github/actions/...</code> folder exist hi nahi karega aur workflow turant crash ho jaayega!<br>
+            <em>(Note: Public/external actions jaise <code>actions/cache@v3</code> ke liye checkout nahi chahiye kyunki GitHub unhe directly unke remote repo se download kar leta hai.)</em>
+          </div>
+        </div>
+
+        <div class="card card-purple">
+          <span class="hinglish-tag tag-purple">Tumhare Slide Ka Exact Breakdown!</span>
+          <h2 class="card-title">🎭 3 Types of Custom Actions (Click Karke Deep Dive Karo!)</h2>
+          <p class="intro-text">
+            GitHub Actions tumhe <strong>3 tareeke</strong> deta hai apna Custom Action banane ke. Farq sirf <code>action.yml</code> ke <code>runs.using</code> field mein hota hai!
+          </p>
+
+          <div class="grid-3">
+            <!-- JS Card -->
+            <div class="type-card type-js" onclick="switchTab('javascript')">
+              <div class="type-icon">{ }</div>
+              <h3>JavaScript Actions</h3>
+              <ul class="type-pill-list">
+                <li><code>using: 'node16'</code> (modern: <code>'node20'</code>)</li>
+                <li>Direct ek JS file (<code>main.js</code>) run karta hai runner VM par</li>
+                <li>NodeJS + koi bhi npm package (<code>@actions/core</code>, <code>@actions/exec</code>) use karo</li>
+                <li>Super fast &amp; Linux / macOS / Windows sab pe chalta hai!</li>
+              </ul>
+              <span class="type-cta">Deep Dive Dekho →</span>
+            </div>
+
+            <!-- Docker Card -->
+            <div class="type-card type-docker" onclick="switchTab('docker')">
+              <div class="type-icon">🐳</div>
+              <h3>Docker Actions</h3>
+              <ul class="type-pill-list">
+                <li><code>using: 'docker'</code> + <code>image: 'Dockerfile'</code></li>
+                <li>Apna custom container environment banao</li>
+                <li><strong>KOI BHI language</strong> (Python, Go, Rust, Ruby, CLI tools) chalao!</li>
+                <li>Full isolation &amp; flexibility — par <strong>sirf Linux runners</strong> pe chalta hai &amp; build time leta hai</li>
+              </ul>
+              <span class="type-cta">Deep Dive Dekho →</span>
+            </div>
+
+            <!-- Composite Card -->
+            <div class="type-card type-composite" onclick="switchTab('composite')">
+              <div class="type-icon">☰</div>
+              <h3>Composite Actions</h3>
+              <ul class="type-pill-list">
+                <li><code>using: 'composite'</code></li>
+                <li>Multiple Workflow Steps ko ek single Action mein bundle karo</li>
+                <li><code>run</code> (commands) aur <code>uses</code> (doosre Actions) dono combine kar sakte ho</li>
+                <li>Koi extra language / Docker skill nahi chahiye — pure YAML!</li>
+              </ul>
+              <span class="type-cta">Deep Dive Dekho →</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card-cyan">
+          <span class="hinglish-tag tag-cyan">Universal Blueprint</span>
+          <h2 class="card-title">📋 Har <code>action.yml</code> Ke 4 Hisse Hote Hain</h2>
+          <div class="pipeline-visual">
+            <div class="pipeline-step">
+              <div class="step-number">1</div>
+              <div class="step-details">
+                <h4>Metadata (<code>name</code> &amp; <code>description</code>)</h4>
+                <p>Action ka naam aur summary — GitHub UI aur Marketplace mein dikhta hai.</p>
+              </div>
+              <div class="step-badge">name: 'Deploy to AWS S3'</div>
+            </div>
+            <div class="pipeline-step">
+              <div class="step-number purple">2</div>
+              <div class="step-details">
+                <h4><code>inputs:</code> (Function Parameters)</h4>
+                <p>Caller workflow <code>with:</code> block se jo arguments bhejega (required / default set kar sakte ho).</p>
+              </div>
+              <div class="step-badge">with: bucket: my-site</div>
+            </div>
+            <div class="pipeline-step">
+              <div class="step-number green">3</div>
+              <div class="step-details">
+                <h4><code>outputs:</code> (Return Values)</h4>
+                <p>Action khatam hone par caller ko kya data wapas milega (<code>steps.&lt;id&gt;.outputs.&lt;name&gt;</code>).</p>
+              </div>
+              <div class="step-badge green">outputs.website-url</div>
+            </div>
+            <div class="pipeline-step">
+              <div class="step-number amber">4</div>
+              <div class="step-details">
+                <h4><code>runs:</code> (The Engine — Yahi Type Decide Karta Hai!)</h4>
+                <p><code>using: 'composite'</code> | <code>using: 'node16'</code> (ya <code>'node20'</code>) | <code>using: 'docker'</code></p>
+              </div>
+              <div class="step-badge amber">runs.using</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-footer-nav">
+          <button class="pager-btn" onclick="switchTab('why-need')">← Previous: Kya Hai &amp; Need</button>
+          <button class="pager-btn primary" onclick="switchTab('composite')">Next: Composite Action →</button>
+        </div>
+      </section>
+
+      <!-- =============================================================== -->
+      <!-- TAB 3: COMPOSITE ACTION                                         -->
+      <!-- =============================================================== -->
+      <section id="composite" class="tab-content">
+        <div class="card card-purple">
+          <span class="hinglish-tag tag-pink">Type 1 · Sabse Aasaan &amp; Most Common</span>
+          <h2 class="card-title">🧩 Composite Action: <code>cached-deps</code></h2>
+          <p class="intro-text">
+            Socho tumhare workflow mein 2 steps har job mein repeat ho rahe the:
+            <strong>Step 1:</strong> <code>actions/cache@v3</code> se <code>node_modules</code> dhundho.
+            <strong>Step 2:</strong> Agar cache miss hua, toh <code>npm ci</code> chalao.
+            <br><br>
+            Composite Action bolta hai: <em>"Bhai in dono steps ko uthao aur ek <code>.github/actions/cached-deps/action.yml</code> mein pack kar do!"</em>
+          </p>
+
+          <div class="code-wrapper">
+            <div class="code-header">
+              <div class="code-filepath"><span class="code-dots"><span></span><span></span><span></span></span>03 Finished Project/.github/actions/cached-deps/action.yml</div>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><code><span class="y-key">name</span>: <span class="y-str">'Get &amp; Cache Dependencies'</span>
+<span class="y-key">description</span>: <span class="y-str">'Get the dependencies (via npm) and cache them.'</span>
+
+<span class="y-com"># 1️⃣ INPUTS: Caller 'with:' se value bhej sakta hai</span>
+<span class="y-key">inputs</span>:
+  <span class="y-key">caching</span>:
+    <span class="y-key">description</span>: <span class="y-str">'Whether to cache dependencies or not.'</span>
+    <span class="y-key">required</span>: <span class="y-num">false</span>
+    <span class="y-key">default</span>: <span class="y-str">'true'</span>   <span class="y-com"># ⚠️ Note: Inputs hamesha STRING hote hain!</span>
+
+<span class="y-com"># 2️⃣ OUTPUTS: Action se caller ko wapas jaane wali value</span>
+<span class="y-key">outputs</span>:
+  <span class="y-key">used-cache</span>:
+    <span class="y-key">description</span>: <span class="y-str">'Whether the cache was used.'</span>
+<span class="y-hl-green">    <span class="y-key">value</span>: <span class="y-expr">${{ steps.install.outputs.cache }}</span>  <span class="y-com"># ← Composite me 'value:' MANDATORY hai!</span></span>
+
+<span class="y-com"># 3️⃣ RUNS: Engine = composite (multiple steps ka bundle)</span>
+<span class="y-key">runs</span>:
+  <span class="y-key">using</span>: <span class="y-str">'composite'</span>
+  <span class="y-key">steps</span>:
+    - <span class="y-key">name</span>: <span class="y-str">Cache dependencies</span>
+      <span class="y-key">if</span>: <span class="y-expr">inputs.caching == 'true'</span>
+      <span class="y-key">id</span>: <span class="y-str">cache</span>
+      <span class="y-key">uses</span>: <span class="y-str">actions/cache@v3</span>
+      <span class="y-key">with</span>:
+        <span class="y-key">path</span>: <span class="y-str">node_modules</span>
+        <span class="y-key">key</span>: <span class="y-str">deps-node-modules-<span class="y-expr">${{ hashFiles('**/package-lock.json') }}</span></span>
+
+    - <span class="y-key">name</span>: <span class="y-str">Install dependencies</span>
+      <span class="y-key">id</span>: <span class="y-str">install</span>
+      <span class="y-key">if</span>: <span class="y-expr">steps.cache.outputs.cache-hit != 'true' || inputs.caching != 'true'</span>
+      <span class="y-key">run</span>: |
+        npm ci
+<span class="y-hl">        echo "cache='<span class="y-expr">${{ inputs.caching }}</span>'" &gt;&gt; $GITHUB_OUTPUT</span>
+<span class="y-hl-amber">      <span class="y-key">shell</span>: <span class="y-str">bash</span>   <span class="y-com"># 🚨 Composite action ke har 'run:' step me MANDATORY!</span></span></code></pre>
+          </div>
+
+          <div class="explain-list">
+            <div class="explain-item">
+              <span class="line-pill">shell: bash</span>
+              <p><strong>Composite Action ka #1 Rule:</strong> Normal workflow mein GitHub automatically default shell le leta hai, lekin Composite Action mein <strong>har <code>run:</code> step pe <code>shell: bash</code> (ya <code>pwsh</code>/<code>sh</code>) likhna zaroori hai</strong>, warna syntax error aayega!</p>
+            </div>
+            <div class="explain-item">
+              <span class="line-pill">outputs.used-cache.value</span>
+              <p><strong>Output Wiring:</strong> Composite action mein <code>outputs</code> ke andar <code>value:</code> field likh kar batana padta hai ki kaunse internal step ka output bahar bhejna hai (<code>${{ steps.install.outputs.cache }}</code>). <em>(JS aur Docker actions mein <code>value:</code> nahi likhte — wahan code khud output set karta hai!)</em></p>
+            </div>
+            <div class="explain-item">
+              <span class="line-pill">inputs.caching == 'true'</span>
+              <p><strong>Strings Only:</strong> Custom Action ke inputs hamesha strings hote hain. Isliye <code>'true'</code> aur <code>'false'</code> quotes mein compare karte hain!</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Output Bubble-up flow for Composite -->
+        <div class="card">
+          <span class="hinglish-tag">Data Flow Visualizer</span>
+          <h2 class="card-title">🔄 Composite Action: Inputs In → Outputs Out</h2>
+          <p class="intro-text">Dekho <code>deploy.yml</code> ke <code>lint</code> job mein data kaise andar jaata hai aur wapas aata hai:</p>
+
+          <div class="pipeline-visual">
+            <div class="pipeline-step">
+              <div class="step-number">1</div>
+              <div class="step-details">
+                <h4>Caller sends Input (<code>deploy.yml</code>)</h4>
+                <p><code>lint</code> job calls <code>uses: ./.github/actions/cached-deps</code> with <code>id: cache-deps</code> aur <code>caching: 'false'</code>.</p>
+              </div>
+              <div class="step-badge">with: caching: 'false'</div>
+            </div>
+            <div class="pipeline-arrow">▼</div>
+            <div class="pipeline-step">
+              <div class="step-number purple">2</div>
+              <div class="step-details">
+                <h4>Internal Step Runs &amp; Writes <code>$GITHUB_OUTPUT</code></h4>
+                <p>Step <code>id: install</code> chalta hai (kyunki caching false hai), <code>npm ci</code> run karta hai, aur <code>cache='false'</code> ko <code>$GITHUB_OUTPUT</code> file mein likh deta hai.</p>
+              </div>
+              <div class="step-badge">steps.install.outputs.cache</div>
+            </div>
+            <div class="pipeline-arrow">▼</div>
+            <div class="pipeline-step">
+              <div class="step-number amber">3</div>
+              <div class="step-details">
+                <h4>Action Maps It to Public Output (<code>action.yml</code>)</h4>
+                <p>Top-level <code>outputs.used-cache.value</code> us internal step output ko action ka public output bana deta hai.</p>
+              </div>
+              <div class="step-badge amber">used-cache = 'false'</div>
+            </div>
+            <div class="pipeline-arrow">▼</div>
+            <div class="pipeline-step step-success">
+              <div class="step-number green">4</div>
+              <div class="step-details">
+                <h4>Caller Reads It in Next Step!</h4>
+                <p><code>deploy.yml</code> ka agla step <code>steps.cache-deps.outputs.used-cache</code> padh ke print kar deta hai!</p>
+              </div>
+              <div class="step-badge green">Cache used? 'false'</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- INTERACTIVE COMPOSITE SIMULATOR -->
+        <div class="card card-green">
+          <span class="hinglish-tag tag-green">Interactive Simulator · Feel Lene Ka Best Tarika!</span>
+          <h2 class="card-title">🎮 Live Run Simulator: <code>cached-deps</code> Test Karo!</h2>
+          <p class="intro-text">
+            Niche buttons click karke alag-alag combinations try karo aur dekho tumhare exact <code>cached-deps/action.yml</code> ke andar kya hota hai!
+          </p>
+
+          <div class="sim-box">
+            <div class="sim-controls">
+              <div class="sim-group">
+                <span class="sim-label">Input <code>with.caching</code>:</span>
+                <button class="sim-toggle active" id="sim-cache-true" onclick="setCompSim('caching', 'true')">'true' (test &amp; build jobs)</button>
+                <button class="sim-toggle" id="sim-cache-false" onclick="setCompSim('caching', 'false')">'false' (lint job)</button>
+              </div>
+              <div class="sim-group">
+                <span class="sim-label">GitHub Cache State:</span>
+                <button class="sim-toggle active-green" id="sim-hit-true" onclick="setCompSim('hit', true)">Cache HIT</button>
+                <button class="sim-toggle" id="sim-hit-false" onclick="setCompSim('hit', false)">Cache MISS</button>
+              </div>
+            </div>
+
+            <div class="pipeline-visual" style="margin: 0.75rem 0;">
+              <div class="pipeline-step" id="comp-step-1">
+                <div class="step-number">1</div>
+                <div class="step-details">
+                  <h4>Step: <code>Cache dependencies</code> (id: cache)</h4>
+                  <p id="comp-step-1-desc">Condition: <code>inputs.caching == 'true'</code> → TRUE! Restores <code>node_modules</code> from cache.</p>
+                </div>
+                <div class="step-badge green" id="comp-step-1-badge">RUNS · HIT!</div>
+              </div>
+              <div class="pipeline-step" id="comp-step-2">
+                <div class="step-number">2</div>
+                <div class="step-details">
+                  <h4>Step: <code>Install dependencies</code> (id: install)</h4>
+                  <p id="comp-step-2-desc">Condition: <code>cache-hit != 'true' || caching != 'true'</code> → FALSE! Skipped — time saved!</p>
+                </div>
+                <div class="step-badge amber" id="comp-step-2-badge">SKIPPED</div>
+              </div>
+            </div>
+
+            <div class="sim-terminal" id="comp-terminal"></div>
+          </div>
+
+          <div class="analogy-box warn">
+            <div class="analogy-title">🧐 Pro Observation (Course Code Mein Subtle Catch!)</div>
+            Simulator mein <code>caching: 'true'</code> + <code>Cache HIT</code> select karke dekho! Jab cache HIT hota hai, <code>install</code> step skip ho jaata hai — isliye <code>$GITHUB_OUTPUT</code> wali line run hi nahi hoti aur <code>used-cache</code> empty aata hai! Real production mein us output ko ek separate unconditional step mein ya <code>steps.cache.outputs.cache-hit</code> se map karna aur bhi accurate hota hai. Yeh detail samajh aayi matlab tumhe Composite Action ka 100% feel aa gaya! 🔥
+          </div>
+        </div>
+
+        <div class="section-footer-nav">
+          <button class="pager-btn" onclick="switchTab('anatomy-types')">← Previous: Anatomy &amp; Types</button>
+          <button class="pager-btn primary" onclick="switchTab('javascript')">Next: JavaScript Action →</button>
+        </div>
+      </section>
+
+      <!-- =============================================================== -->
+      <!-- TAB 4: JAVASCRIPT ACTION                                        -->
+      <!-- =============================================================== -->
+      <section id="javascript" class="tab-content">
+        <div class="card">
+          <span class="hinglish-tag">Type 2 · Fast, Programmable &amp; Cross-Platform</span>
+          <h2 class="card-title">⚡ JavaScript Action: <code>deploy-s3-javascript</code></h2>
+          <p class="intro-text">
+            Ab aate hain <code>deploy</code> job par! Humein built website (<code>./dist</code> folder) ko <strong>AWS S3 bucket</strong> pe upload karna hai aur live website ka URL wapas return karna hai.
+            <br><br>
+            YAML/bash mein complex logic, loops, validations, ya API calls likhna ganda ho jaata hai. Isliye GitHub bolta hai:
+            <strong>"Direct Node.js mein JavaScript file likho — main usse runner pe directly execute kar dunga!"</strong>
+          </p>
+
+          <div class="sub-tabs">
+            <button class="sub-tab-btn active" onclick="switchSubTab(this, 'js-action-yml')">📄 action.yml</button>
+            <button class="sub-tab-btn" onclick="switchSubTab(this, 'js-main-js')">⚡ main.js</button>
+            <button class="sub-tab-btn" onclick="switchSubTab(this, 'js-pkg-json')">📦 package.json</button>
+            <button class="sub-tab-btn" onclick="switchSubTab(this, 'js-caller')">🔗 Caller (deploy.yml)</button>
+          </div>
+
+          <!-- action.yml -->
+          <div id="js-action-yml" class="sub-panel active">
+            <div class="code-wrapper">
+              <div class="code-header">
+                <div class="code-filepath"><span class="code-dots"><span></span><span></span><span></span></span>.github/actions/deploy-s3-javascript/action.yml</div>
+                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              </div>
+              <pre><code><span class="y-key">name</span>: <span class="y-str">'Deploy to AWS S3'</span>
+<span class="y-key">description</span>: <span class="y-str">'Deploy a static website via AWS S3.'</span>
+
+<span class="y-key">inputs</span>:
+  <span class="y-key">bucket</span>:
+    <span class="y-key">description</span>: <span class="y-str">'The S3 bucket name.'</span>
+    <span class="y-key">required</span>: <span class="y-num">true</span>
+  <span class="y-key">bucket-region</span>:
+    <span class="y-key">description</span>: <span class="y-str">'The region of the S3 bucket.'</span>
+    <span class="y-key">required</span>: <span class="y-num">false</span>
+    <span class="y-key">default</span>: <span class="y-str">'us-east-1'</span>   <span class="y-com"># Caller na de toh default use hoga!</span>
+  <span class="y-key">dist-folder</span>:
+    <span class="y-key">description</span>: <span class="y-str">'The folder containing the deployable files.'</span>
+    <span class="y-key">required</span>: <span class="y-num">true</span>
+
+<span class="y-key">outputs</span>:
+  <span class="y-key">website-url</span>:
+    <span class="y-key">description</span>: <span class="y-str">'The URL of the deployed website.'</span>
+    <span class="y-com"># 👀 Notice! Yahan 'value:' NAHI hai — main.js khud core.setOutput() se set karega!</span>
+
+<span class="y-key">runs</span>:
+<span class="y-hl">  <span class="y-key">using</span>: <span class="y-str">'node16'</span>   <span class="y-com"># 💡 Modern GitHub Actions me 'node20' use karo (node16 deprecated hai)</span>
+  <span class="y-key">main</span>: <span class="y-str">'main.js'</span>   <span class="y-com"># ← Entry point JS file!</span></span></code></pre>
+            </div>
+          </div>
+
+          <!-- main.js -->
+          <div id="js-main-js" class="sub-panel">
+            <div class="code-wrapper">
+              <div class="code-header">
+                <div class="code-filepath"><span class="code-dots"><span></span><span></span><span></span></span>.github/actions/deploy-s3-javascript/main.js</div>
+                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              </div>
+              <pre><code><span class="y-kw">const</span> core = <span class="y-fn">require</span>(<span class="y-str">'@actions/core'</span>);
+<span class="y-com">// const github = require('@actions/github');  // GitHub API &amp; PR/repo context ke liye</span>
+<span class="y-kw">const</span> exec = <span class="y-fn">require</span>(<span class="y-str">'@actions/exec'</span>);
+
+<span class="y-kw">function</span> <span class="y-fn">run</span>() {
+  <span class="y-com">// 1️⃣ Caller ke 'with:' inputs ko read karo</span>
+<span class="y-hl">  <span class="y-kw">const</span> bucket = core.<span class="y-fn">getInput</span>(<span class="y-str">'bucket'</span>, { <span class="y-key">required</span>: <span class="y-num">true</span> });
+  <span class="y-kw">const</span> bucketRegion = core.<span class="y-fn">getInput</span>(<span class="y-str">'bucket-region'</span>, { <span class="y-key">required</span>: <span class="y-num">true</span> });
+  <span class="y-kw">const</span> distFolder = core.<span class="y-fn">getInput</span>(<span class="y-str">'dist-folder'</span>, { <span class="y-key">required</span>: <span class="y-num">true</span> });</span>
+
+  <span class="y-com">// 2️⃣ Runner par AWS CLI command execute karo (aws ubuntu-latest pe pre-installed hai!)</span>
+  <span class="y-kw">const</span> s3Uri = <span class="y-str">`s3://${bucket}`</span>;
+<span class="y-hl-amber">  exec.<span class="y-fn">exec</span>(<span class="y-str">`aws s3 sync ${distFolder} ${s3Uri} --region ${bucketRegion}`</span>);</span>
+
+  <span class="y-com">// 3️⃣ Output set karo (internally $GITHUB_OUTPUT me likhta hai!)</span>
+  <span class="y-kw">const</span> websiteUrl = <span class="y-str">`http://${bucket}.s3-website-${bucketRegion}.amazonaws.com`</span>;
+<span class="y-hl-green">  core.<span class="y-fn">setOutput</span>(<span class="y-str">'website-url'</span>, websiteUrl);</span>
+}
+
+<span class="y-fn">run</span>();</code></pre>
+            </div>
+          </div>
+
+          <!-- package.json -->
+          <div id="js-pkg-json" class="sub-panel">
+            <div class="code-wrapper">
+              <div class="code-header">
+                <div class="code-filepath"><span class="code-dots"><span></span><span></span><span></span></span>.github/actions/deploy-s3-javascript/package.json</div>
+                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              </div>
+              <pre><code>{
+  <span class="y-key">"name"</span>: <span class="y-str">"deploy-s3-javascript"</span>,
+  <span class="y-key">"version"</span>: <span class="y-str">"1.0.0"</span>,
+  <span class="y-key">"main"</span>: <span class="y-str">"main.js"</span>,
+  <span class="y-key">"dependencies"</span>: {
+<span class="y-hl">    <span class="y-key">"@actions/core"</span>: <span class="y-str">"^1.9.1"</span>,
+    <span class="y-key">"@actions/exec"</span>: <span class="y-str">"^1.1.1"</span>,
+    <span class="y-key">"@actions/github"</span>: <span class="y-str">"^5.0.3"</span></span>
+  }
+}</code></pre>
+            </div>
+          </div>
+
+          <!-- Caller -->
+          <div id="js-caller" class="sub-panel">
+            <div class="code-wrapper">
+              <div class="code-header">
+                <div class="code-filepath"><span class="code-dots"><span></span><span></span><span></span></span>02 Docker Code/.github/workflows/deploy.yml (JS Action Call)</div>
+                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              </div>
+              <pre><code>      - <span class="y-key">name</span>: <span class="y-str">Deploy site</span>
+        <span class="y-key">id</span>: <span class="y-str">deploy</span>
+<span class="y-hl">        <span class="y-key">uses</span>: <span class="y-str">./.github/actions/deploy-s3-javascript</span></span>
+        <span class="y-key">env</span>:
+          <span class="y-key">AWS_ACCESS_KEY_ID</span>: <span class="y-expr">${{ secrets.AWS_ACCESS_KEY_ID }}</span>
+          <span class="y-key">AWS_SECRET_ACCESS_KEY</span>: <span class="y-expr">${{ secrets.AWS_SECRET_ACCESS_KEY }}</span>
+        <span class="y-key">with</span>:
+          <span class="y-key">bucket</span>: <span class="y-str">gha-custom-action-hosting</span>
+          <span class="y-key">dist-folder</span>: <span class="y-str">./dist</span>
+          <span class="y-com"># bucket-region: us-east-2  (nahi diya toh 'us-east-1' default!)</span>
+
+      - <span class="y-key">name</span>: <span class="y-str">Output information</span>
+        <span class="y-key">run</span>: |
+          echo "Live URL: <span class="y-expr">${{ steps.deploy.outputs.website-url }}</span>"</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- JAVASCRIPT ACTION STEP-BY-STEP FLOW -->
+        <div class="card card-purple">
+          <span class="hinglish-tag tag-purple">Data &amp; Execution Flow Visualizer</span>
+          <h2 class="card-title">🔄 JavaScript Action Flow: Caller se Node.js → AWS S3 → Output Tak!</h2>
+          <p class="intro-text">
+            Andar se exactly kya hota hai jab <code>deploy.yml</code> tumhare <code>./.github/actions/deploy-s3-javascript</code> ko call karta hai? Har ek hop ko dekho:
+          </p>
+
+          <div class="pipeline-visual">
+            <div class="pipeline-step">
+              <div class="step-number">1</div>
+              <div class="step-details">
+                <h4>Caller Triggers Action (<code>deploy.yml</code>)</h4>
+                <p>Workflow step <code>id: deploy</code> bhejta hai: <code>with:</code> mein <code>bucket</code> &amp; <code>dist-folder</code>, aur <code>env:</code> mein AWS Secrets (<code>AWS_ACCESS_KEY_ID</code>, <code>AWS_SECRET_ACCESS_KEY</code>).</p>
+              </div>
+              <div class="step-badge">uses: ./deploy-s3-javascript</div>
+            </div>
+
+            <div class="pipeline-arrow">▼</div>
+
+            <div class="pipeline-step">
+              <div class="step-number purple">2</div>
+              <div class="step-details">
+                <h4>GitHub Reads <code>action.yml</code> &amp; Starts Node Directly on VM</h4>
+                <p>GitHub dekhta hai <code>runs.using: 'node16'</code> &amp; <code>main: 'main.js'</code>. Koi Docker container nahi banta — seedha runner VM pe <code>node main.js</code> launch hota hai! Saath hi <code>with:</code> values (aur defaults jaise <code>us-east-1</code>) <code>INPUT_*</code> env vars ban ke inject ho jaati hain.</p>
+              </div>
+              <div class="step-badge">node main.js (Instant!)</div>
+            </div>
+
+            <div class="pipeline-arrow">▼</div>
+
+            <div class="pipeline-step">
+              <div class="step-number">3</div>
+              <div class="step-details">
+                <h4><code>core.getInput()</code> Reads &amp; Validates Inputs (<code>main.js</code>)</h4>
+                <p><code>@actions/core</code> behind-the-scenes unhi <code>process.env['INPUT_...']</code> variables ko read + trim karta hai. Agar <code>required: true</code> wala input missing ho, toh yahi step crash karke clear error de deta hai!</p>
+              </div>
+              <div class="step-badge">core.getInput('bucket')</div>
+            </div>
+
+            <div class="pipeline-arrow">▼</div>
+
+            <div class="pipeline-step">
+              <div class="step-number amber">4</div>
+              <div class="step-details">
+                <h4><code>exec.exec()</code> Runs <code>aws s3 sync</code> on Same Runner VM</h4>
+                <p>Kyunki JS file usi Ubuntu VM pe chal rahi hai, use directly <code>./dist</code> folder bhi mil jaata hai, pre-installed <code>aws</code> CLI bhi mil jaata hai, aur <code>env:</code> wale AWS credentials bhi automatically pick ho jaate hain!</p>
+              </div>
+              <div class="step-badge amber">aws s3 sync ./dist s3://...</div>
+            </div>
+
+            <div class="pipeline-arrow">▼</div>
+
+            <div class="pipeline-step">
+              <div class="step-number purple">5</div>
+              <div class="step-details">
+                <h4><code>core.setOutput()</code> Writes to <code>$GITHUB_OUTPUT</code></h4>
+                <p><code>core.setOutput('website-url', websiteUrl)</code> internally wahi kaam karta hai jo bash mein <code>echo "website-url=..." &gt;&gt; $GITHUB_OUTPUT</code> karta hai — bas JS mein clean helper function ke through!</p>
+              </div>
+              <div class="step-badge">website-url=http://...</div>
+            </div>
+
+            <div class="pipeline-arrow">▼</div>
+
+            <div class="pipeline-step step-success">
+              <div class="step-number green">6</div>
+              <div class="step-details">
+                <h4>Caller Reads Return Value in Next Step (<code>deploy.yml</code>)</h4>
+                <p>Node process khatam hote hi control <code>deploy.yml</code> ko wapas milta hai, aur agla step <code>steps.deploy.outputs.website-url</code> print kar deta hai!</p>
+              </div>
+              <div class="step-badge green">${{ steps.deploy.outputs.website-url }}</div>
+            </div>
+          </div>
+
+          <div class="analogy-box purple">
+            <div class="analogy-title">💡 Secret Connection: <code>core.getInput()</code> = <code>process.env['INPUT_*']</code>!</div>
+            Tumhe pata hai? JavaScript Action aur Docker Action andar se <strong>same mechanism</strong> use karte hain! Bas Docker (Python) mein tum khud <code>os.environ['INPUT_BUCKET']</code> likhte ho, jabki JavaScript mein <code>@actions/core</code> ka <code>core.getInput('bucket')</code> tumhare liye wahi env var cleanly read, trim, aur validate kar deta hai!
+          </div>
+        </div>
+
+        <!-- INTERACTIVE JAVASCRIPT ACTION SIMULATOR -->
+        <div class="card card-green">
+          <span class="hinglish-tag tag-green">Interactive Live Tracer · JS Action Feel!</span>
+          <h2 class="card-title">🎮 Live Run Simulator: <code>deploy-s3-javascript</code> Trace Karo!</h2>
+          <p class="intro-text">
+            Inputs badal ke dekho ki <code>action.yml</code> ka default kaise lagta hai, <code>core.getInput()</code> kya karta hai, aur agar <code>required: true</code> input miss ho jaaye toh kya hota hai!
+          </p>
+
+          <div class="sim-box">
+            <div class="sim-controls">
+              <div class="sim-group">
+                <span class="sim-label"><code>with.bucket</code>:</span>
+                <button class="sim-toggle active" id="js-sim-bucket-ok" onclick="setJsSim('bucket', 'gha-custom-action-hosting')">'gha-custom-action-hosting'</button>
+                <button class="sim-toggle" id="js-sim-bucket-empty" onclick="setJsSim('bucket', '')">❌ Missing (empty)</button>
+              </div>
+              <div class="sim-group">
+                <span class="sim-label"><code>with.bucket-region</code>:</span>
+                <button class="sim-toggle active-green" id="js-sim-reg-default" onclick="setJsSim('region', 'default')">Not passed (default)</button>
+                <button class="sim-toggle" id="js-sim-reg-east2" onclick="setJsSim('region', 'us-east-2')">'us-east-2'</button>
+                <button class="sim-toggle" id="js-sim-reg-mumbai" onclick="setJsSim('region', 'ap-south-1')">'ap-south-1'</button>
+              </div>
+            </div>
+
+            <div class="pipeline-visual" style="margin: 0.75rem 0;">
+              <div class="pipeline-step" id="js-flow-s1">
+                <div class="step-number">1</div>
+                <div class="step-details">
+                  <h4>GitHub Injects Env Vars (from <code>with:</code> + <code>action.yml</code> defaults)</h4>
+                  <p id="js-flow-s1-desc"></p>
+                </div>
+                <div class="step-badge" id="js-flow-s1-badge">ENV READY</div>
+              </div>
+              <div class="pipeline-step" id="js-flow-s2">
+                <div class="step-number purple">2</div>
+                <div class="step-details">
+                  <h4><code>main.js</code> → <code>core.getInput()</code> Validation</h4>
+                  <p id="js-flow-s2-desc"></p>
+                </div>
+                <div class="step-badge" id="js-flow-s2-badge">VALIDATED</div>
+              </div>
+              <div class="pipeline-step" id="js-flow-s3">
+                <div class="step-number amber">3</div>
+                <div class="step-details">
+                  <h4><code>exec.exec()</code> → AWS CLI Sync &amp; <code>core.setOutput()</code></h4>
+                  <p id="js-flow-s3-desc"></p>
+                </div>
+                <div class="step-badge green" id="js-flow-s3-badge">DEPLOYED</div>
+              </div>
+            </div>
+
+            <div class="sim-terminal" id="js-sim-terminal"></div>
+          </div>
+        </div>
+
+        <!-- The 3 Official GitHub Toolkit Packages -->
+        <div class="card card-cyan">
+          <span class="hinglish-tag tag-cyan">GitHub Actions Toolkit (Superpowers)</span>
+          <h2 class="card-title">🧰 Ye 3 Official Packages Kya Karte Hain?</h2>
+          <div class="grid-3">
+            <div class="mini-box">
+              <h4>🎯 <code>@actions/core</code></h4>
+              <p>Sabse important package! Isse tum:</p>
+              <ul style="margin-top:0.45rem;">
+                <li><code>core.getInput('bucket')</code> → YAML ka <code>with:</code> input padho</li>
+                <li><code>core.setOutput('website-url', url)</code> → Output bhejo</li>
+                <li><code>core.setFailed('Error msg')</code> → Step ko cleanly fail karo</li>
+                <li><code>core.info()</code> / <code>core.warning()</code> → Logs print karo</li>
+              </ul>
+            </div>
+            <div class="mini-box">
+              <h4>💻 <code>@actions/exec</code></h4>
+              <p>Runner ke terminal pe koi bhi CLI command chalata hai:</p>
+              <ul style="margin-top:0.45rem;">
+                <li><code>await exec.exec('aws s3 sync ...')</code></li>
+                <li>Command ka output live GitHub Actions logs mein stream hota hai!</li>
+                <li><em>(Pro tip: <code>exec.exec()</code> async Promise return karta hai, production mein <code>async function run()</code> + <code>await</code> use karo!)</em></li>
+              </ul>
+            </div>
+            <div class="mini-box">
+              <h4>🐙 <code>@actions/github</code></h4>
+              <p>GitHub API aur workflow metadata deta hai:</p>
+              <ul style="margin-top:0.45rem;">
+                <li><code>github.context.repo</code> → Repo owner &amp; name</li>
+                <li><code>github.context.sha</code> → Commit SHA</li>
+                <li><code>github.getOctokit(token)</code> → PR pe comment karna, issues banana!</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- HUGE GOTCHA: node_modules -->
+        <div class="card card-amber">
+          <span class="hinglish-tag tag-amber">Most Confusing Question Answered!</span>
+          <h2 class="card-title">🤯 Wait... <code>node_modules/</code> Repo Mein Commit Kyun Hai?!</h2>
+          <p class="intro-text">
+            Agar tumne <code>03 Finished Project/.github/actions/deploy-s3-javascript/</code> khola hoga, toh dekha hoga ki wahan <code>node_modules/</code> folder pada hai! Normally hum <code>node_modules</code> ko <code>.gitignore</code> karte hain — fir yahan kyun?!
+          </p>
+
+          <div class="analogy-box warn">
+            <div class="analogy-title">⚡ Reason: GitHub <code>npm install</code> KHUD NAHI CHALATA!</div>
+            Jab GitHub Actions tumhara JS Action run karta hai, wo seedha <code>node main.js</code> execute karta hai. Wo tumhare action folder mein <code>npm install</code> nahi chalata! Agar <code>@actions/core</code> us folder mein nahi mila, toh turant <code>Error: Cannot find module '@actions/core'</code> aayega!
+          </div>
+
+          <div class="grid-2">
+            <div class="mini-box">
+              <h4>Option A: Course Approach (Simple)</h4>
+              <p><code>node_modules/</code> ko git repo mein commit kar do (exclude mat karo). Learning &amp; small local actions ke liye quick aur easy hai.</p>
+            </div>
+            <div class="mini-box" style="border-color: rgba(16, 185, 129, 0.4);">
+              <h4>Option B: Production Best Practice ⭐</h4>
+              <p><code>@vercel/ncc</code> tool use karo: <code>npx ncc build main.js -o dist</code>. Ye poora code + saare <code>node_modules</code> ko <strong>EK single file <code>dist/index.js</code></strong> mein bundle kar deta hai! Fir <code>action.yml</code> mein <code>main: 'dist/index.js'</code> set karo — repo bilkul clean rehta hai!</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-footer-nav">
+          <button class="pager-btn" onclick="switchTab('composite')">← Previous: Composite Action</button>
+          <button class="pager-btn primary" onclick="switchTab('docker')">Next: Docker Action →</button>
+        </div>
+      </section>
+
+      <!-- =============================================================== -->
+      <!-- TAB 5: DOCKER ACTION                                            -->
+      <!-- =============================================================== -->
+      <section id="docker" class="tab-content">
+        <div class="card card-cyan">
+          <span class="hinglish-tag tag-cyan">Type 3 · Any Language, Total Control!</span>
+          <h2 class="card-title">🐳 Docker Container Action: <code>deploy-s3-docker</code></h2>
+          <p class="intro-text">
+            Socho tumhari team JavaScript nahi, <strong>Python</strong> (ya Go, Rust, Java, bash + custom Linux tools) use karna chahti hai! Ya tum runner par pre-installed <code>aws</code> CLI pe depend nahi rehna chahte — tum chahte ho ki tumhara action apna khud ka <strong>Python 3 + <code>boto3</code> SDK</strong> leke aaye!
+            <br><br>
+            Bas! Yahi kaam <strong>Docker Action</strong> karta hai: GitHub tumhare <code>Dockerfile</code> se ek container build karega, usme tumhara <code>deployment.py</code> run karega, aur khatam hote hi container delete kar dega!
+          </p>
+
+          <div class="sub-tabs">
+            <button class="sub-tab-btn active" onclick="switchSubTab(this, 'dk-action-yml')">📄 action.yml</button>
+            <button class="sub-tab-btn" onclick="switchSubTab(this, 'dk-dockerfile')">🐳 Dockerfile</button>
+            <button class="sub-tab-btn" onclick="switchSubTab(this, 'dk-python')">🐍 deployment.py</button>
+            <button class="sub-tab-btn" onclick="switchSubTab(this, 'dk-reqs')">📦 requirements.txt</button>
+          </div>
+
+          <!-- action.yml -->
+          <div id="dk-action-yml" class="sub-panel active">
+            <div class="code-wrapper">
+              <div class="code-header">
+                <div class="code-filepath"><span class="code-dots"><span></span><span></span><span></span></span>.github/actions/deploy-s3-docker/action.yml</div>
+                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              </div>
+              <pre><code><span class="y-key">name</span>: <span class="y-str">'Deploy to AWS S3'</span>
+<span class="y-key">description</span>: <span class="y-str">'Deploy a static website via AWS S3.'</span>
+
+<span class="y-com"># 👀 Notice! Inputs &amp; Outputs BILKUL SAME hain JS Action jaise!</span>
+<span class="y-key">inputs</span>:
+  <span class="y-key">bucket</span>:
+    <span class="y-key">description</span>: <span class="y-str">'The S3 bucket name.'</span>
+    <span class="y-key">required</span>: <span class="y-num">true</span>
+  <span class="y-key">bucket-region</span>:
+    <span class="y-key">description</span>: <span class="y-str">'The region of the S3 bucket.'</span>
+    <span class="y-key">required</span>: <span class="y-num">false</span>
+    <span class="y-key">default</span>: <span class="y-str">'us-east-1'</span>
+  <span class="y-key">dist-folder</span>:
+    <span class="y-key">description</span>: <span class="y-str">'The folder containing the deployable files.'</span>
+    <span class="y-key">required</span>: <span class="y-num">true</span>
+
+<span class="y-key">outputs</span>:
+  <span class="y-key">website-url</span>:
+    <span class="y-key">description</span>: <span class="y-str">'The URL of the deployed website.'</span>
+
+<span class="y-key">runs</span>:
+<span class="y-hl">  <span class="y-key">using</span>: <span class="y-str">'docker'</span>
+  <span class="y-key">image</span>: <span class="y-str">'Dockerfile'</span>  <span class="y-com"># Ya pre-built image: 'docker://user/repo:v1'</span></span></code></pre>
+            </div>
+          </div>
+
+          <!-- Dockerfile -->
+          <div id="dk-dockerfile" class="sub-panel">
+            <div class="code-wrapper">
+              <div class="code-header">
+                <div class="code-filepath"><span class="code-dots"><span></span><span></span><span></span></span>.github/actions/deploy-s3-docker/Dockerfile</div>
+                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              </div>
+              <pre><code><span class="y-kw">FROM</span> <span class="y-str">python:3</span>                      <span class="y-com"># 1. Base Python 3 Linux image</span>
+
+<span class="y-kw">COPY</span> requirements.txt /requirements.txt
+<span class="y-kw">RUN</span> pip install -r requirements.txt  <span class="y-com"># 2. boto3 (AWS Python SDK) install karo</span>
+
+<span class="y-kw">COPY</span> deployment.py /deployment.py    <span class="y-com"># 3. Apni deploy script copy karo</span>
+
+<span class="y-hl-green"><span class="y-kw">CMD</span> [<span class="y-str">"python"</span>, <span class="y-str">"/deployment.py"</span>]     <span class="y-com"># 4. Container start hote hi script chalao!</span></span></code></pre>
+            </div>
+          </div>
+
+          <!-- deployment.py -->
+          <div id="dk-python" class="sub-panel">
+            <div class="code-wrapper">
+              <div class="code-header">
+                <div class="code-filepath"><span class="code-dots"><span></span><span></span><span></span></span>.github/actions/deploy-s3-docker/deployment.py</div>
+                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              </div>
+              <pre><code><span class="y-kw">import</span> os
+<span class="y-kw">import</span> boto3
+<span class="y-kw">import</span> mimetypes
+<span class="y-kw">from</span> botocore.config <span class="y-kw">import</span> Config
+
+
+<span class="y-kw">def</span> <span class="y-fn">run</span>():
+    <span class="y-com"># 1️⃣ MAGIC! GitHub YAML 'with:' inputs ko INPUT_&lt;UPPERCASE&gt; env vars bana deta hai!</span>
+<span class="y-hl">    bucket = os.environ[<span class="y-str">'INPUT_BUCKET'</span>]
+    bucket_region = os.environ[<span class="y-str">'INPUT_BUCKET-REGION'</span>]
+    dist_folder = os.environ[<span class="y-str">'INPUT_DIST-FOLDER'</span>]</span>
+
+    <span class="y-com"># 2️⃣ AWS S3 client banao (AWS_ACCESS_KEY_ID &amp; SECRET env se auto-load hoti hain!)</span>
+    configuration = <span class="y-fn">Config</span>(region_name=bucket_region)
+    s3_client = boto3.<span class="y-fn">client</span>(<span class="y-str">'s3'</span>, config=configuration)
+
+    <span class="y-com"># 3️⃣ ./dist folder ki saari files walk karke S3 pe upload karo (correct Content-Type ke saath!)</span>
+    <span class="y-kw">for</span> root, subdirs, files <span class="y-kw">in</span> os.<span class="y-fn">walk</span>(dist_folder):
+        <span class="y-kw">for</span> file <span class="y-kw">in</span> files:
+            s3_client.<span class="y-fn">upload_file</span>(
+                os.path.<span class="y-fn">join</span>(root, file),
+                bucket,
+                os.path.<span class="y-fn">join</span>(root, file).<span class="y-fn">replace</span>(dist_folder + <span class="y-str">'/'</span>, <span class="y-str">''</span>),
+                ExtraArgs={<span class="y-str">"ContentType"</span>: mimetypes.<span class="y-fn">guess_type</span>(file)[<span class="y-num">0</span>]}
+            )
+
+    <span class="y-com"># 4️⃣ Output wapas bhejo — $GITHUB_OUTPUT file container ke andar mounted hoti hai!</span>
+    website_url = <span class="y-str">f'http://{bucket}.s3-website-{bucket_region}.amazonaws.com'</span>
+<span class="y-hl-green">    <span class="y-kw">with</span> <span class="y-fn">open</span>(os.environ[<span class="y-str">'GITHUB_OUTPUT'</span>], <span class="y-str">'a'</span>) <span class="y-kw">as</span> gh_output:
+        <span class="y-fn">print</span>(<span class="y-str">f'website-url={website_url}'</span>, file=gh_output)</span>
+
+
+<span class="y-kw">if</span> __name__ == <span class="y-str">'__main__'</span>:
+    <span class="y-fn">run</span>()</code></pre>
+            </div>
+          </div>
+
+          <!-- requirements.txt -->
+          <div id="dk-reqs" class="sub-panel">
+            <div class="code-wrapper">
+              <div class="code-header">
+                <div class="code-filepath"><span class="code-dots"><span></span><span></span><span></span></span>.github/actions/deploy-s3-docker/requirements.txt</div>
+                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              </div>
+              <pre><code>boto3==1.24.71
+botocore==1.27.71
+jmespath==1.0.1
+python-dateutil==2.8.2
+s3transfer==0.6.0
+six==1.16.0
+urllib3==1.26.12</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- DOCKER ACTION STEP-BY-STEP FLOW -->
+        <div class="card">
+          <span class="hinglish-tag tag-cyan">Data &amp; Container Lifecycle Flow</span>
+          <h2 class="card-title">🔄 Docker Action Flow: Caller se <code>docker build</code> → Python <code>boto3</code> → Output Tak!</h2>
+          <p class="intro-text">
+            Jab <code>deploy.yml</code> tumhare <code>./.github/actions/deploy-s3-docker</code> ko call karta hai, toh Ubuntu runner VM ke andar step-by-step exact ye 7 cheezein hoti hain:
+          </p>
+
+          <div class="pipeline-visual">
+            <div class="pipeline-step">
+              <div class="step-number">1</div>
+              <div class="step-details">
+                <h4>Caller Triggers Action (<code>deploy.yml</code>)</h4>
+                <p>Workflow step <code>id: deploy</code> call karta hai <code>uses: ./.github/actions/deploy-s3-docker</code> — saath mein <code>with:</code> (<code>bucket</code>, <code>dist-folder</code>) aur <code>env:</code> (AWS Secrets) pass karta hai.</p>
+              </div>
+              <div class="step-badge">uses: ./deploy-s3-docker</div>
+            </div>
+
+            <div class="pipeline-arrow">▼</div>
+
+            <div class="pipeline-step">
+              <div class="step-number amber">2</div>
+              <div class="step-details">
+                <h4>GitHub Reads <code>action.yml</code> &amp; Runs <code>docker build</code></h4>
+                <p>GitHub dekhta hai <code>runs.using: 'docker'</code> &amp; <code>image: 'Dockerfile'</code>. Runner VM par Docker image build hoti hai: <code>python:3</code> pull → <code>pip install -r requirements.txt</code> (<code>boto3</code>) → <code>deployment.py</code> copy!</p>
+              </div>
+              <div class="step-badge amber">docker build -f Dockerfile</div>
+            </div>
+
+            <div class="pipeline-arrow">▼</div>
+
+            <div class="pipeline-step">
+              <div class="step-number purple">3</div>
+              <div class="step-details">
+                <h4>GitHub Launches <code>docker run</code> with Auto-Mounts &amp; <code>INPUT_*</code> Env Vars</h4>
+                <p>Container start karte waqt GitHub automatically: (a) <code>with:</code> values + defaults ko <code>INPUT_BUCKET</code>, <code>INPUT_BUCKET-REGION</code>, <code>INPUT_DIST-FOLDER</code> env vars mein daalta hai, (b) repo folder (<code>./dist</code>) ko <code>/github/workspace</code> pe mount karta hai, aur (c) <code>$GITHUB_OUTPUT</code> file ko mount karta hai!</p>
+              </div>
+              <div class="step-badge">docker run -e INPUT_* -v ...</div>
+            </div>
+
+            <div class="pipeline-arrow">▼</div>
+
+            <div class="pipeline-step">
+              <div class="step-number">4</div>
+              <div class="step-details">
+                <h4>Container Starts <code>CMD ["python", "/deployment.py"]</code></h4>
+                <p>Python script run hoti hai aur seedha <code>os.environ['INPUT_BUCKET']</code>, <code>os.environ['INPUT_BUCKET-REGION']</code>, <code>os.environ['INPUT_DIST-FOLDER']</code> padh leti hai (koi <code>@actions/core</code> nahi chahiye!).</p>
+              </div>
+              <div class="step-badge">os.environ['INPUT_*']</div>
+            </div>
+
+            <div class="pipeline-arrow">▼</div>
+
+            <div class="pipeline-step">
+              <div class="step-number amber">5</div>
+              <div class="step-details">
+                <h4><code>boto3</code> Walks <code>./dist</code> &amp; Uploads Every File with MIME Type</h4>
+                <p><code>boto3.client('s3')</code> container ke env se AWS credentials auto-pick karta hai, <code>os.walk('./dist')</code> se har file (<code>index.html</code>, <code>.js</code>, <code>.css</code>) uthata hai, <code>mimetypes.guess_type()</code> se Content-Type set karke S3 pe upload karta hai!</p>
+              </div>
+              <div class="step-badge amber">s3_client.upload_file(...)</div>
+            </div>
+
+            <div class="pipeline-arrow">▼</div>
+
+            <div class="pipeline-step">
+              <div class="step-number purple">6</div>
+              <div class="step-details">
+                <h4>Python Writes Live URL to Mounted <code>$GITHUB_OUTPUT</code></h4>
+                <p><code>with open(os.environ['GITHUB_OUTPUT'], 'a')</code> ke through Python <code>website-url=http://...</code> directly host runner ki mounted file mein append kar deta hai!</p>
+              </div>
+              <div class="step-badge">website-url=http://...</div>
+            </div>
+
+            <div class="pipeline-arrow">▼</div>
+
+            <div class="pipeline-step step-success">
+              <div class="step-number green">7</div>
+              <div class="step-details">
+                <h4>Container Stops &amp; Caller Prints Returned URL (<code>deploy.yml</code>)</h4>
+                <p>Python finish hote hi Docker container delete ho jaata hai, par mounted <code>$GITHUB_OUTPUT</code> runner pe safe rehta hai — agla step <code>${{ steps.deploy.outputs.website-url }}</code> print kar deta hai!</p>
+              </div>
+              <div class="step-badge green">${{ steps.deploy.outputs.website-url }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- INTERACTIVE DOCKER ACTION SIMULATOR -->
+        <div class="card card-green">
+          <span class="hinglish-tag tag-green">Interactive Live Tracer · Docker Action Feel!</span>
+          <h2 class="card-title">🎮 Live Run Simulator: <code>deploy-s3-docker</code> Trace Karo!</h2>
+          <p class="intro-text">
+            Runner OS, Region aur Image Source toggle karke live dekho ki Docker Action kaise build/run hota hai, non-Linux runner pe kya hota hai, aur pre-built image se speed kitni fast hoti hai!
+          </p>
+
+          <div class="sim-box">
+            <div class="sim-controls">
+              <div class="sim-group">
+                <span class="sim-label"><code>runs-on</code>:</span>
+                <button class="sim-toggle active-green" id="dk-sim-os-linux" onclick="setDkSim('os', 'ubuntu-latest')">ubuntu-latest (Linux)</button>
+                <button class="sim-toggle" id="dk-sim-os-mac" onclick="setDkSim('os', 'macos-latest')">❌ macos-latest</button>
+              </div>
+              <div class="sim-group">
+                <span class="sim-label"><code>with.bucket-region</code>:</span>
+                <button class="sim-toggle active" id="dk-sim-reg-default" onclick="setDkSim('region', 'default')">Not passed (default)</button>
+                <button class="sim-toggle" id="dk-sim-reg-east2" onclick="setDkSim('region', 'us-east-2')">'us-east-2'</button>
+                <button class="sim-toggle" id="dk-sim-reg-mumbai" onclick="setDkSim('region', 'ap-south-1')">'ap-south-1'</button>
+              </div>
+              <div class="sim-group">
+                <span class="sim-label"><code>runs.image</code>:</span>
+                <button class="sim-toggle active" id="dk-sim-img-file" onclick="setDkSim('image', 'dockerfile')">'Dockerfile' (build)</button>
+                <button class="sim-toggle" id="dk-sim-img-hub" onclick="setDkSim('image', 'prebuilt')">'docker://user/s3:v1' (fast)</button>
+              </div>
+            </div>
+
+            <div class="pipeline-visual" style="margin: 0.75rem 0;">
+              <div class="pipeline-step" id="dk-flow-s1">
+                <div class="step-number">1</div>
+                <div class="step-details">
+                  <h4>Runner OS Check &amp; Docker Image Prep</h4>
+                  <p id="dk-flow-s1-desc"></p>
+                </div>
+                <div class="step-badge" id="dk-flow-s1-badge">READY</div>
+              </div>
+              <div class="pipeline-step" id="dk-flow-s2">
+                <div class="step-number purple">2</div>
+                <div class="step-details">
+                  <h4><code>docker run</code> → Env Vars (<code>INPUT_*</code>) &amp; Volume Mounts</h4>
+                  <p id="dk-flow-s2-desc"></p>
+                </div>
+                <div class="step-badge" id="dk-flow-s2-badge">MOUNTED</div>
+              </div>
+              <div class="pipeline-step" id="dk-flow-s3">
+                <div class="step-number amber">3</div>
+                <div class="step-details">
+                  <h4><code>python /deployment.py</code> → <code>boto3</code> Upload &amp; <code>$GITHUB_OUTPUT</code></h4>
+                  <p id="dk-flow-s3-desc"></p>
+                </div>
+                <div class="step-badge green" id="dk-flow-s3-badge">DEPLOYED</div>
+              </div>
+            </div>
+
+            <div class="sim-terminal" id="dk-sim-terminal"></div>
+          </div>
+        </div>
+
+        <!-- UNDER THE HOOD: HOW DOCKER CONTAINER TALKS TO RUNNER -->
+        <div class="card card-purple">
+          <span class="hinglish-tag tag-purple">Behind The Scenes Magic ✨</span>
+          <h2 class="card-title">🔌 Container Isolated Hai... Toh Files, Inputs &amp; Outputs Kaise Share Hote Hain?!</h2>
+          <p class="intro-text">
+            Yahi sabse bada <em>"Aha!"</em> moment hai jo videos mein jaldi nikal jaata hai. Jab GitHub <code>docker run</code> chalata hai, wo <strong>automatically 3 bridges</strong> jod deta hai Runner VM aur tumhare Docker container ke beech:
+          </p>
+
+          <div class="arch-diagram">
+            <div class="arch-box">
+              <h4>🖥️ GitHub Runner VM (<code>ubuntu-latest</code>)</h4>
+              <div class="arch-item">with:<br>&nbsp;&nbsp;bucket: gha-security-hosting-demo<br>&nbsp;&nbsp;bucket-region: us-east-1<br>&nbsp;&nbsp;dist-folder: ./dist</div>
+              <div class="arch-item">env:<br>&nbsp;&nbsp;AWS_ACCESS_KEY_ID: ***<br>&nbsp;&nbsp;AWS_SECRET_ACCESS_KEY: ***</div>
+              <div class="arch-item">📂 Workspace: ./dist/index.html</div>
+              <div class="arch-item">📝 File: $GITHUB_OUTPUT</div>
+            </div>
+
+            <div class="arch-bridge">
+              <div>auto-injects env ━━▶</div>
+              <div style="margin: 1rem 0;">volume mounts ━━▶</div>
+              <div>◀━━ writes output</div>
+            </div>
+
+            <div class="arch-box docker-box">
+              <h4>🐳 Docker Container (<code>python:3</code>)</h4>
+              <div class="arch-item">INPUT_BUCKET<br>INPUT_BUCKET-REGION<br>INPUT_DIST-FOLDER</div>
+              <div class="arch-item">AWS_ACCESS_KEY_ID<br>AWS_SECRET_ACCESS_KEY<br><span style="color:#67e8f9">(boto3 auto-reads!)</span></div>
+              <div class="arch-item">📂 WORKDIR: /github/workspace<br><span style="color:#67e8f9">('./dist' mil jaata hai!)</span></div>
+              <div class="arch-item">📝 os.environ['GITHUB_OUTPUT']<br><span style="color:#6ee7b7">website-url=http://...</span></div>
+            </div>
+          </div>
+
+          <div class="explain-list">
+            <div class="explain-item">
+              <span class="line-pill">Bridge 1 · Inputs</span>
+              <p>Docker container ke andar <code>@actions/core</code> nahi hota! Isliye GitHub har <code>with:</code> input ko <strong>UPPERCASE + <code>INPUT_</code> prefix</strong> laga ke environment variable bana deta hai. Example: <code>bucket-region</code> → <code>INPUT_BUCKET-REGION</code> (hyphens hyphens hi rehte hain, spaces <code>_</code> ban jaate hain!).</p>
+            </div>
+            <div class="explain-item">
+              <span class="line-pill">Bridge 2 · Files</span>
+              <p>GitHub runner ka poora repo folder (jisme tumne <code>./dist</code> download kiya tha) container ke <code>/github/workspace</code> mein bind-mount hota hai — aur wahi default working directory hoti hai! Isliye Python mein <code>os.walk('./dist')</code> seedha tumhari built React/Vite files dekh paata hai!</p>
+            </div>
+            <div class="explain-item">
+              <span class="line-pill">Bridge 3 · Outputs</span>
+              <p>Runner ki <code>$GITHUB_OUTPUT</code> file bhi container mein mount hoti hai. Python usme <code>website-url=http://...</code> append kar deta hai, aur container band hone ke baad workflow use <code>${{ steps.deploy.outputs.website-url }}</code> se padh leta hai!</p>
+            </div>
+          </div>
+
+          <div class="analogy-box danger">
+            <div class="analogy-title">⚠️ Docker Action Ke 2 Trade-offs Yaad Rakhna!</div>
+            1. <strong>Linux Runners ONLY:</strong> Docker Container Actions sirf <code>ubuntu-latest</code> (Linux) runners pe chalte hain — <code>macos-latest</code> ya <code>windows-latest</code> pe FAIL ho jaayenge!<br>
+            2. <strong>Slower Startup:</strong> Har workflow run mein GitHub <code>Dockerfile</code> se image build karta hai (<code>pip install boto3</code> etc. — 15-40 sec extra). Speed badhani ho toh pre-built image Docker Hub / GHCR pe push karke <code>image: 'docker://user/s3-deploy:1.0'</code> use karo!
+          </div>
+        </div>
+
+        <div class="section-footer-nav">
+          <button class="pager-btn" onclick="switchTab('javascript')">← Previous: JavaScript Action</button>
+          <button class="pager-btn primary" onclick="switchTab('full-picture')">Next: Full Pipeline &amp; Swap Magic →</button>
+        </div>
+      </section>
+
+      <!-- =============================================================== -->
+      <!-- TAB 6: FULL PICTURE & SWAP MAGIC                                -->
+      <!-- =============================================================== -->
+      <section id="full-picture" class="tab-content">
+        <div class="card card-green">
+          <span class="hinglish-tag tag-green">Software Engineering Magic!</span>
+          <h2 class="card-title">🔀 1-Line Swap Magic: JS Action ↔ Docker Action</h2>
+          <p class="intro-text">
+            Sabse khoobsurat baat notice ki tumne? <code>deploy-s3-javascript</code> aur <code>deploy-s3-docker</code> dono ka <strong>interface (inputs &amp; outputs) 100% IDENTICAL</strong> hai!
+            <br>Matlab caller workflow (<code>deploy.yml</code>) ko farq hi nahi padta ki andar Node.js chal raha hai ya Python+Docker! Niche toggle dabao aur khud dekho:
+          </p>
+
+          <div class="sim-box">
+            <div class="sim-controls">
+              <span class="sim-label">Deploy Action Engine Chuno:</span>
+              <button class="sim-toggle active" id="swap-js-btn" onclick="setSwapMode('js')">⚡ JavaScript Action (Node + AWS CLI)</button>
+              <button class="sim-toggle" id="swap-docker-btn" onclick="setSwapMode('docker')">🐳 Docker Action (Python + boto3)</button>
+            </div>
+
+            <div class="code-wrapper" style="margin-top:0;">
+              <div class="code-header">
+                <div class="code-filepath"><span class="code-dots"><span></span><span></span><span></span></span>.github/workflows/deploy.yml → deploy job</div>
+                <span class="step-badge" id="swap-badge">Engine: NodeJS</span>
+              </div>
+              <pre id="swap-code"></pre>
+            </div>
+
+            <div class="sim-terminal" id="swap-explain"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <span class="hinglish-tag">End-to-End Pipeline</span>
+          <h2 class="card-title">🚀 Poora <code>deploy.yml</code> Ek Nazar Mein (Start to End)</h2>
+          <p class="intro-text">
+            Dekho kaise <code>03 Finished Project</code> mein saare jobs aur custom actions milkar ek clean production CI/CD pipeline banate hain:
+          </p>
+
+          <div class="pipeline-visual">
+            <div class="pipeline-step">
+              <div class="step-number">1</div>
+              <div class="step-details">
+                <h4>Job: <code>lint</code> (Parallel with test)</h4>
+                <p><code>checkout</code> → <strong>🧩 <code>cached-deps</code></strong> (<code>caching: 'false'</code>) → prints <code>used-cache</code> output → <code>npm run lint</code></p>
+              </div>
+              <div class="step-badge">Composite Action</div>
+            </div>
+
+            <div class="pipeline-step">
+              <div class="step-number">2</div>
+              <div class="step-details">
+                <h4>Job: <code>test</code> (Parallel with lint)</h4>
+                <p><code>checkout</code> → <strong>🧩 <code>cached-deps</code></strong> (default <code>caching: 'true'</code>) → <code>npm run test</code> → uploads <code>test.json</code> on failure</p>
+              </div>
+              <div class="step-badge">Composite Action</div>
+            </div>
+
+            <div class="pipeline-arrow">▼ needs: test</div>
+
+            <div class="pipeline-step">
+              <div class="step-number purple">3</div>
+              <div class="step-details">
+                <h4>Job: <code>build</code></h4>
+                <p><code>checkout</code> → <strong>🧩 <code>cached-deps</code></strong> → <code>npm run build</code> → uploads <code>dist/</code> as artifact <code>dist-files</code></p>
+              </div>
+              <div class="step-badge">Composite + Artifact</div>
+            </div>
+
+            <div class="pipeline-arrow">▼ needs: build</div>
+
+            <div class="pipeline-step step-success">
+              <div class="step-number green">4</div>
+              <div class="step-details">
+                <h4>Job: <code>deploy</code></h4>
+                <p><code>checkout</code> → downloads <code>dist-files</code> to <code>./dist</code> → <strong>🐳 <code>deploy-s3-docker</code></strong> (or ⚡ JS) → prints <code>Live URL: ${{ steps.deploy.outputs.website-url }}</code></p>
+              </div>
+              <div class="step-badge green">Docker / JS Action</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Master Comparison Table -->
+        <div class="card card-purple">
+          <span class="hinglish-tag tag-purple">Complete Comparison</span>
+          <h2 class="card-title">📊 Composite vs JavaScript vs Docker — Side by Side</h2>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Feature</th>
+                  <th>🧩 Composite</th>
+                  <th>⚡ JavaScript</th>
+                  <th>🐳 Docker</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong><code>runs.using</code></strong></td>
+                  <td><code>'composite'</code></td>
+                  <td><code>'node20'</code> (course: <code>'node16'</code>)</td>
+                  <td><code>'docker'</code></td>
+                </tr>
+                <tr>
+                  <td><strong>Kya Likhna Padta Hai?</strong></td>
+                  <td>Sirf YAML steps (<code>run</code> + <code>uses</code>)</td>
+                  <td>JS / TS + <code>@actions/core</code></td>
+                  <td><code>Dockerfile</code> + koi bhi language (Python, Go, etc.)</td>
+                </tr>
+                <tr>
+                  <td><strong>Runner OS Support</strong></td>
+                  <td>Linux, macOS, Windows</td>
+                  <td>Linux, macOS, Windows</td>
+                  <td><strong>Linux ONLY</strong></td>
+                </tr>
+                <tr>
+                  <td><strong>Startup Speed</strong></td>
+                  <td>⚡ Instant</td>
+                  <td>⚡ Very Fast</td>
+                  <td>🐢 Slow (builds Docker image)</td>
+                </tr>
+                <tr>
+                  <td><strong>Inputs Kaise Padhte Hain?</strong></td>
+                  <td><code>${{ inputs.caching }}</code></td>
+                  <td><code>core.getInput('bucket')</code></td>
+                  <td><code>os.environ['INPUT_BUCKET']</code></td>
+                </tr>
+                <tr>
+                  <td><strong>Outputs Kaise Bhejte Hain?</strong></td>
+                  <td><code>&gt;&gt; $GITHUB_OUTPUT</code> + <code>outputs.&lt;k&gt;.value</code></td>
+                  <td><code>core.setOutput('key', val)</code></td>
+                  <td>Write <code>key=val</code> to <code>$GITHUB_OUTPUT</code></td>
+                </tr>
+                <tr>
+                  <td><strong>Dependencies Kaise Handle Hon?</strong></td>
+                  <td>Runner tools / other actions</td>
+                  <td>Commit <code>node_modules</code> or bundle with <code>ncc</code></td>
+                  <td>Installed inside <code>Dockerfile</code></td>
+                </tr>
+                <tr>
+                  <td><strong>Best Use Case</strong></td>
+                  <td>Repeated YAML steps (cache + install, setup scripts)</td>
+                  <td>Fast custom logic, GitHub API, cross-OS tools</td>
+                  <td>Python/Go/Rust tools, custom OS binaries, strict isolation</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="section-footer-nav">
+          <button class="pager-btn" onclick="switchTab('docker')">← Previous: Docker Action</button>
+          <button class="pager-btn primary" onclick="switchTab('cheatsheet-quiz')">Next: Gotchas, Sharing &amp; Quiz →</button>
+        </div>
+      </section>
+
+      <!-- =============================================================== -->
+      <!-- TAB 7: GOTCHAS, SHARING & QUIZ                                  -->
+      <!-- =============================================================== -->
+      <section id="cheatsheet-quiz" class="tab-content">
+        <div class="card">
+          <span class="hinglish-tag">Local vs Shared vs Marketplace</span>
+          <h2 class="card-title">🌍 Custom Actions Share Kaise Karte Hain?</h2>
+          <p class="intro-text">
+            Abhi tak humne actions ko <strong>same repository</strong> mein rakha (<code>./.github/actions/...</code>). Par agar wahi action tumhe <strong>10 alag repositories</strong> mein ya poori duniya ke saath share karna ho toh?
+          </p>
+
+          <div class="grid-2">
+            <div class="mini-box">
+              <h4>📁 1. Same Repo (Local Action)</h4>
+              <p style="margin-bottom:0.6rem;">Folder: <code>.github/actions/my-action/action.yml</code></p>
+              <div class="code-wrapper" style="margin:0.5rem 0;">
+                <pre style="padding:0.75rem;"><code>- <span class="y-key">uses</span>: <span class="y-str">actions/checkout@v4</span>  <span class="y-com"># MANDATORY!</span>
+- <span class="y-key">uses</span>: <span class="y-str">./.github/actions/my-action</span></code></pre>
+              </div>
+              <p>Best jab action sirf isi ek project ke kaam ka ho.</p>
+            </div>
+
+            <div class="mini-box" style="border-color: rgba(16, 185, 129, 0.4);">
+              <h4>🌐 2. Dedicated Repo / GitHub Marketplace</h4>
+              <p style="margin-bottom:0.6rem;">Root mein rakho: <code>action.yml</code> + Git release tag <code>v1</code></p>
+              <div class="code-wrapper" style="margin:0.5rem 0;">
+                <pre style="padding:0.75rem;"><code><span class="y-com"># Checkout ki zaroorat nahi!</span>
+- <span class="y-key">uses</span>: <span class="y-str">dhruv-org/deploy-s3-action@v1</span></code></pre>
+              </div>
+              <p>Public repo mein <code>action.yml</code> root pe rakh ke Release publish karo → optionally GitHub Marketplace pe list ho jaata hai!</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card-amber">
+          <span class="hinglish-tag tag-amber">Interview &amp; Production Checklist</span>
+          <h2 class="card-title">🧠 6 Golden Rules (Kabhi Mat Bhoolna!)</h2>
+          <div class="explain-list">
+            <div class="explain-item">
+              <span class="line-pill">Rule 1</span>
+              <p><strong>Local Action = Checkout First:</strong> <code>uses: ./.github/actions/...</code> se pehle <code>actions/checkout</code> zaroor chalao.</p>
+            </div>
+            <div class="explain-item">
+              <span class="line-pill">Rule 2</span>
+              <p><strong>Composite = <code>shell: bash</code> + <code>outputs.&lt;name&gt;.value</code>:</strong> Har <code>run:</code> step pe <code>shell</code> dena compulsory hai, aur action outputs mein <code>value:</code> map karna compulsory hai.</p>
+            </div>
+            <div class="explain-item">
+              <span class="line-pill">Rule 3</span>
+              <p><strong>JavaScript = Bundle Dependencies:</strong> GitHub <code>npm install</code> nahi chalata! <code>@vercel/ncc</code> se bundle karo ya <code>node_modules</code> commit karo. Modern workflows mein <code>using: 'node20'</code> use karo.</p>
+            </div>
+            <div class="explain-item">
+              <span class="line-pill">Rule 4</span>
+              <p><strong>Docker = <code>INPUT_</code> Env Vars + Linux Only:</strong> Inputs container mein <code>INPUT_&lt;UPPERCASE&gt;</code> env vars ban ke aate hain. Sirf Linux runners pe chalta hai.</p>
+            </div>
+            <div class="explain-item">
+              <span class="line-pill">Rule 5</span>
+              <p><strong>Secrets Kabhi Hardcode Mat Karo:</strong> Secrets ko caller workflow se <code>env:</code> ya <code>with:</code> ke through pass karo (jaise <code>AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}</code>).</p>
+            </div>
+            <div class="explain-item">
+              <span class="line-pill">Rule 6</span>
+              <p><strong>Decision Shortcut:</strong> Sirf YAML steps combine karne hain → <strong>Composite</strong>. Programming logic chahiye &amp; JS aati hai → <strong>JavaScript</strong>. Python/Go/Rust ya custom OS environment chahiye → <strong>Docker</strong>.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- FEEL CHECK QUIZ -->
+        <div class="card card-purple">
+          <span class="hinglish-tag tag-purple">Feel Check · 5 Quick Scenarios</span>
+          <h2 class="card-title">🎯 Test Karo — Kitna Feel Aaya?</h2>
+          <p class="intro-text">Har question ka answer click karke check karo. Instant Hinglish explanation milegi!</p>
+
+          <!-- Q1 -->
+          <div class="quiz-card">
+            <div class="quiz-q">1. Tumne ek local custom action banaya <code>./.github/actions/cached-deps</code> aur bina <code>actions/checkout</code> chalaye use call kar diya. Kya hoga?</div>
+            <div class="quiz-opts">
+              <button class="quiz-opt" onclick="checkQuiz(this, false, 'q1', 'Nahi! Runner VM khaali hoti hai, GitHub local folder apne aap download nahi karta jab tak checkout na chale.')">Chale jaayega, GitHub khud load kar lega</button>
+              <button class="quiz-opt" onclick="checkQuiz(this, true, 'q1', 'Bilkul sahi! 🔥 Runner VM khaali hoti hai. Local action call karne se pehle actions/checkout chalana 100% zaroori hai taaki .github/actions folder disk pe aaye!')">Fail hoga — folder exist hi nahi karega!</button>
+              <button class="quiz-opt" onclick="checkQuiz(this, false, 'q1', 'Nahi, yeh Composite, JS aur Docker teeno local actions ke liye fail hota hai.')">Sirf Docker action mein fail hoga</button>
+            </div>
+            <div class="quiz-feedback" id="q1"></div>
+          </div>
+
+          <!-- Q2 -->
+          <div class="quiz-card">
+            <div class="quiz-q">2. Tumhari team ko ek action banana hai jo macOS aur Windows runners dono pe chale aur GitHub PR pe comment post kare. Kaunsa type choose karoge?</div>
+            <div class="quiz-opts">
+              <button class="quiz-opt" onclick="checkQuiz(this, false, 'q2', 'Galat! Docker Actions SIRF Linux runners pe chalte hain, macOS/Windows pe fail ho jaayenge!')">🐳 Docker Container Action</button>
+              <button class="quiz-opt" onclick="checkQuiz(this, true, 'q2', 'Spot on! ⚡ JavaScript Action Linux, macOS aur Windows teeno pe fast chalta hai, aur @actions/github (Octokit) se PR comment karna super easy hai!')">⚡ JavaScript Action</button>
+              <button class="quiz-opt" onclick="checkQuiz(this, false, 'q2', 'Composite se curl wagarah karke mushkil hoga, JS + @actions/github cleanest &amp; cross-platform hai!')">🧩 Composite Action with bash curl</button>
+            </div>
+            <div class="quiz-feedback" id="q2"></div>
+          </div>
+
+          <!-- Q3 -->
+          <div class="quiz-card">
+            <div class="quiz-q">3. Composite Action mein ek <code>run: npm ci</code> step likhne par workflow error de raha hai. Sabse common missing cheez kya hogi?</div>
+            <div class="quiz-opts">
+              <button class="quiz-opt" onclick="checkQuiz(this, true, 'q3', 'Ekdam correct! 🎯 Composite actions ke har run: step mein shell: bash (ya pwsh/sh) explicitly likhna mandatory hota hai!')"><code>shell: bash</code> lagana bhool gaye!</button>
+              <button class="quiz-opt" onclick="checkQuiz(this, false, 'q3', 'runs-on job level pe hota hai, action.yml mein nahi!')"><code>runs-on: ubuntu-latest</code> bhool gaye</button>
+              <button class="quiz-opt" onclick="checkQuiz(this, false, 'q3', 'Dockerfile sirf Docker actions mein lagti hai.')"><code>Dockerfile</code> banana bhool gaye</button>
+            </div>
+            <div class="quiz-feedback" id="q3"></div>
+          </div>
+
+          <!-- Q4 -->
+          <div class="quiz-card">
+            <div class="quiz-q">4. Docker Action ke <code>action.yml</code> mein input ka naam <code>dist-folder</code> hai. Python (<code>deployment.py</code>) mein iski value kaise milegi?</div>
+            <div class="quiz-opts">
+              <button class="quiz-opt" onclick="checkQuiz(this, false, 'q4', 'core.getInput() sirf JavaScript actions mein hota hai, Python mein nahi!')"><code>core.getInput('dist-folder')</code></button>
+              <button class="quiz-opt" onclick="checkQuiz(this, false, 'q4', 'Close! Par GitHub hyphens (-) ko underscore (_) nahi banata — sirf uppercase + INPUT_ prefix lagata hai!')"><code>os.environ['INPUT_DIST_FOLDER']</code></button>
+              <button class="quiz-opt" onclick="checkQuiz(this, true, 'q4', '100% nailed it! 🐳 GitHub INPUT_ prefix lagata hai aur UPPERCASE karta hai (hyphens same rehte hain) → os.environ[\'INPUT_DIST-FOLDER\']!')"><code>os.environ['INPUT_DIST-FOLDER']</code></button>
+            </div>
+            <div class="quiz-feedback" id="q4"></div>
+          </div>
+
+          <!-- Q5 -->
+          <div class="quiz-card">
+            <div class="quiz-q">5. Tumhare <code>lint</code>, <code>test</code>, aur <code>build</code> jobs mein <code>npm ci</code> + caching ke steps repeat ho rahe hain aur agle step ko usi VM mein <code>node_modules</code> chahiye. Kya banaoge?</div>
+            <div class="quiz-opts">
+              <button class="quiz-opt" onclick="checkQuiz(this, false, 'q5', 'Nahi! Reusable workflow apni alag VM mein chalta hai, wahan install ki hui node_modules parent job ko nahi milegi!')">🏗️ Reusable Workflow (<code>workflow_call</code>)</button>
+              <button class="quiz-opt" onclick="checkQuiz(this, true, 'q5', 'BINGO! 🎉 Composite Custom Action usi same job ki VM mein chalta hai, toh node_modules directly agle step (npm run lint/test/build) ko mil jaata hai — zero extra skills needed!')">🧩 Composite Custom Action</button>
+              <button class="quiz-opt" onclick="checkQuiz(this, false, 'q5', 'Docker overkill aur slow hoga sirf npm cache + install steps combine karne ke liye!')">🐳 Docker Action</button>
+            </div>
+            <div class="quiz-feedback" id="q5"></div>
+          </div>
+        </div>
+
+        <div class="section-footer-nav">
+          <button class="pager-btn" onclick="switchTab('full-picture')">← Previous: Full Pipeline</button>
+          <button class="pager-btn primary" onclick="switchTab('why-need')">↺ Back to Start</button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    // =====================================================
+    // 1. SIDEBAR TAB SWITCHING + PROGRESS BAR
+    // =====================================================
+    const tabOrder = [
+      'why-need',
+      'anatomy-types',
+      'composite',
+      'javascript',
+      'docker',
+      'full-picture',
+      'cheatsheet-quiz'
+    ];
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabId);
+      });
+      document.querySelectorAll('.tab-content').forEach(sec => {
+        sec.classList.toggle('active', sec.id === tabId);
+      });
+
+      const idx = tabOrder.indexOf(tabId);
+      if (idx !== -1) {
+        const pct = ((idx + 1) / tabOrder.length) * 100;
+        document.getElementById('progress-fill').style.width = pct + '%';
+        document.getElementById('progress-label').textContent = (idx + 1) + ' / ' + tabOrder.length;
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // =====================================================
+    // 2. SUB-TABS (File Switchers & Before/After)
+    // =====================================================
+    function switchSubTab(btn, panelId) {
+      const parentCard = btn.closest('.card') || btn.parentElement.parentElement;
+      const tabGroup = btn.parentElement;
+      tabGroup.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      // Hide sibling sub-panels belonging to this tab group
+      let el = tabGroup.nextElementSibling;
+      while (el && el.classList.contains('sub-panel')) {
+        el.classList.remove('active');
+        el = el.nextElementSibling;
+      }
+      const target = document.getElementById(panelId);
+      if (target) target.classList.add('active');
+    }
+
+    // =====================================================
+    // 3. COPY CODE BUTTON
+    // =====================================================
+    function copyCode(btn) {
+      const pre = btn.closest('.code-wrapper').querySelector('pre');
+      const text = pre.innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        const old = btn.textContent;
+        btn.textContent = 'Copied ✓';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = old;
+          btn.classList.remove('copied');
+        }, 1500);
+      });
+    }
+
+    // =====================================================
+    // 4. COMPOSITE ACTION LIVE SIMULATOR
+    // =====================================================
+    const compState = { caching: 'true', hit: true };
+
+    function setCompSim(key, val) {
+      compState[key] = val;
+      renderCompSim();
+    }
+
+    function renderCompSim() {
+      const { caching, hit } = compState;
+
+      // Toggle buttons
+      document.getElementById('sim-cache-true').className = 'sim-toggle' + (caching === 'true' ? ' active' : '');
+      document.getElementById('sim-cache-false').className = 'sim-toggle' + (caching === 'false' ? ' active' : '');
+      document.getElementById('sim-hit-true').className = 'sim-toggle' + (hit ? ' active-green' : '');
+      document.getElementById('sim-hit-false').className = 'sim-toggle' + (!hit ? ' active-amber' : '');
+
+      const s1 = document.getElementById('comp-step-1');
+      const s1Desc = document.getElementById('comp-step-1-desc');
+      const s1Badge = document.getElementById('comp-step-1-badge');
+
+      const s2 = document.getElementById('comp-step-2');
+      const s2Desc = document.getElementById('comp-step-2-desc');
+      const s2Badge = document.getElementById('comp-step-2-badge');
+
+      const term = document.getElementById('comp-terminal');
+
+      if (caching === 'false') {
+        s1.className = 'pipeline-step step-skipped';
+        s1Desc.innerHTML = "Condition: <code>inputs.caching == 'true'</code> → <strong>FALSE</strong>! Cache step skip ho gaya.";
+        s1Badge.className = 'step-badge amber';
+        s1Badge.textContent = 'SKIPPED';
+
+        s2.className = 'pipeline-step step-success';
+        s2Desc.innerHTML = "Condition: <code>inputs.caching != 'true'</code> → <strong>TRUE</strong>! Fresh <code>npm ci</code> chala aur <code>$GITHUB_OUTPUT</code> mein <code>cache='false'</code> likha gaya.";
+        s2Badge.className = 'step-badge green';
+        s2Badge.textContent = 'RUNS · npm ci';
+
+        term.innerHTML =
+          `<div><span class="term-blue">$</span> Running action: <strong>./.github/actions/cached-deps</strong> (with caching='false')</div>` +
+          `<div><span class="term-amber">⏭️ [Step 1: Cache dependencies]</span> Skipped (caching is 'false')</div>` +
+          `<div><span class="term-green">▶ [Step 2: Install dependencies]</span> Running: npm ci ... installed 420 packages (12s)</div>` +
+          `<div><span class="term-pink">📝 $GITHUB_OUTPUT &lt;&lt;</span> cache='false'</div>` +
+          `<div><span class="term-green">✅ Caller Output:</span> Cache used? 'false'</div>`;
+      } else if (hit) {
+        s1.className = 'pipeline-step step-success';
+        s1Desc.innerHTML = "Condition: <code>inputs.caching == 'true'</code> → <strong>TRUE</strong>! Matching key mil gayi — <code>node_modules</code> 1 second mein restore!";
+        s1Badge.className = 'step-badge green';
+        s1Badge.textContent = 'RUNS · CACHE HIT!';
+
+        s2.className = 'pipeline-step step-skipped';
+        s2Desc.innerHTML = "Condition: <code>cache-hit != 'true' || caching != 'true'</code> → <strong>FALSE</strong>! <code>npm ci</code> skip — super fast build! 🚀";
+        s2Badge.className = 'step-badge amber';
+        s2Badge.textContent = 'SKIPPED';
+
+        term.innerHTML =
+          `<div><span class="term-blue">$</span> Running action: <strong>./.github/actions/cached-deps</strong> (with caching='true')</div>` +
+          `<div><span class="term-green">▶ [Step 1: Cache dependencies]</span> Cache restored from key: deps-node-modules-9f81a2... (1s)</div>` +
+          `<div><span class="term-amber">⏭️ [Step 2: Install dependencies]</span> Skipped (cache-hit == 'true')</div>` +
+          `<div><span class="term-amber">⚠️ Subtle Catch:</span> Step 2 skipped, so steps.install.outputs.cache is empty ('')</div>` +
+          `<div><span class="term-green">✅ Next Job Step:</span> node_modules is READY in the same VM!</div>`;
+      } else {
+        s1.className = 'pipeline-step';
+        s1Desc.innerHTML = "Condition: <code>inputs.caching == 'true'</code> → <strong>TRUE</strong>! Par key nahi mili (Cache MISS). Post-step end mein nayi cache save karega!";
+        s1Badge.className = 'step-badge amber';
+        s1Badge.textContent = 'RUNS · MISS';
+
+        s2.className = 'pipeline-step step-success';
+        s2Desc.innerHTML = "Condition: <code>cache-hit != 'true'</code> → <strong>TRUE</strong>! <code>npm ci</code> run hua aur <code>$GITHUB_OUTPUT</code> mein <code>cache='true'</code> set hua.";
+        s2Badge.className = 'step-badge green';
+        s2Badge.textContent = 'RUNS · npm ci';
+
+        term.innerHTML =
+          `<div><span class="term-blue">$</span> Running action: <strong>./.github/actions/cached-deps</strong> (with caching='true')</div>` +
+          `<div><span class="term-amber">▶ [Step 1: Cache dependencies]</span> Cache not found for key deps-node-modules-9f81a2...</div>` +
+          `<div><span class="term-green">▶ [Step 2: Install dependencies]</span> Running: npm ci ... installed 420 packages (12s)</div>` +
+          `<div><span class="term-pink">📝 $GITHUB_OUTPUT &lt;&lt;</span> cache='true'</div>` +
+          `<div><span class="term-blue">💾 [Post Cache dependencies]</span> Saved node_modules to cache for next run!</div>` +
+          `<div><span class="term-green">✅ Caller Output:</span> Cache used? 'true'</div>`;
+      }
+    }
+
+    // =====================================================
+    // 5. JS vs DOCKER 1-LINE SWAP DEMO
+    // =====================================================
+    function setSwapMode(mode) {
+      document.getElementById('swap-js-btn').className = 'sim-toggle' + (mode === 'js' ? ' active' : '');
+      document.getElementById('swap-docker-btn').className = 'sim-toggle' + (mode === 'docker' ? ' active-green' : '');
+
+      const badge = document.getElementById('swap-badge');
+      const code = document.getElementById('swap-code');
+      const explain = document.getElementById('swap-explain');
+
+      const usesLine = mode === 'js'
+        ? `<span class="y-hl">        <span class="y-key">uses</span>: <span class="y-str">./.github/actions/deploy-s3-javascript</span>  <span class="y-com"># ⚡ SIRF YE 1 LINE BADLI!</span></span>`
+        : `<span class="y-hl-green">        <span class="y-key">uses</span>: <span class="y-str">./.github/actions/deploy-s3-docker</span>      <span class="y-com"># 🐳 SIRF YE 1 LINE BADLI!</span></span>`;
+
+      code.innerHTML = `<code>      - <span class="y-key">name</span>: <span class="y-str">Deploy site</span>
+        <span class="y-key">id</span>: <span class="y-str">deploy</span>
+${usesLine}
+        <span class="y-key">env</span>:
+          <span class="y-key">AWS_ACCESS_KEY_ID</span>: <span class="y-expr">\${{ secrets.AWS_ACCESS_KEY_ID }}</span>
+          <span class="y-key">AWS_SECRET_ACCESS_KEY</span>: <span class="y-expr">\${{ secrets.AWS_SECRET_ACCESS_KEY }}</span>
+        <span class="y-key">with</span>:
+          <span class="y-key">bucket</span>: <span class="y-str">gha-security-hosting-demo</span>
+          <span class="y-key">dist-folder</span>: <span class="y-str">./dist</span>
+
+      - <span class="y-key">name</span>: <span class="y-str">Output information</span>
+        <span class="y-key">run</span>: echo "Live URL: <span class="y-expr">\${{ steps.deploy.outputs.website-url }}</span>"</code>`;
+
+      if (mode === 'js') {
+        badge.textContent = 'Engine: NodeJS (main.js)';
+        badge.className = 'step-badge';
+        explain.innerHTML =
+          `<div><span class="term-blue">⚡ Under the Hood (JavaScript Action):</span></div>` +
+          `<div>1. Runner reads <code>action.yml</code> → sees <code>using: 'node16'</code> &amp; <code>main: 'main.js'</code>.</div>` +
+          `<div>2. Directly executes <code>node main.js</code> on the Ubuntu VM (~1 sec startup!).</div>` +
+          `<div>3. <code>core.getInput()</code> reads inputs → <code>exec.exec('aws s3 sync ...')</code> uploads <code>./dist</code>.</div>` +
+          `<div>4. <code>core.setOutput('website-url', ...)</code> returns the live URL to <code>deploy.yml</code>!</div>`;
+      } else {
+        badge.textContent = 'Engine: Docker (Python + boto3)';
+        badge.className = 'step-badge green';
+        explain.innerHTML =
+          `<div><span class="term-green">🐳 Under the Hood (Docker Action):</span></div>` +
+          `<div>1. Runner reads <code>action.yml</code> → sees <code>using: 'docker'</code> &amp; <code>image: 'Dockerfile'</code>.</div>` +
+          `<div>2. Builds Docker image (<code>python:3</code> + <code>pip install boto3</code>) &amp; mounts workspace + <code>$GITHUB_OUTPUT</code>.</div>` +
+          `<div>3. Injects <code>INPUT_BUCKET</code>, <code>INPUT_BUCKET-REGION</code>, <code>INPUT_DIST-FOLDER</code> env vars.</div>` +
+          `<div>4. Runs <code>python /deployment.py</code> → uploads files with MIME types → writes <code>website-url=...</code> to <code>$GITHUB_OUTPUT</code>!</div>`;
+      }
+    }
+
+    // =====================================================
+    // 6. INTERACTIVE QUIZ
+    // =====================================================
+    function checkQuiz(btn, isCorrect, feedbackId, msg) {
+      const card = btn.closest('.quiz-card');
+      card.querySelectorAll('.quiz-opt').forEach(o => {
+        o.classList.remove('correct', 'wrong');
+      });
+      btn.classList.add(isCorrect ? 'correct' : 'wrong');
+
+      const fb = document.getElementById(feedbackId);
+      fb.textContent = msg;
+      fb.className = 'quiz-feedback show ' + (isCorrect ? 'ok' : 'no');
+    }
+
+    // =====================================================
+    // 4B. JAVASCRIPT ACTION LIVE SIMULATOR
+    // =====================================================
+    const jsSimState = { bucket: 'gha-custom-action-hosting', region: 'default' };
+
+    function setJsSim(key, val) {
+      jsSimState[key] = val;
+      renderJsSim();
+    }
+
+    function renderJsSim() {
+      const { bucket, region } = jsSimState;
+      const effectiveRegion = region === 'default' ? 'us-east-1' : region;
+
+      document.getElementById('js-sim-bucket-ok').className = 'sim-toggle' + (bucket ? ' active' : '');
+      document.getElementById('js-sim-bucket-empty').className = 'sim-toggle' + (!bucket ? ' active-amber' : '');
+      document.getElementById('js-sim-reg-default').className = 'sim-toggle' + (region === 'default' ? ' active-green' : '');
+      document.getElementById('js-sim-reg-east2').className = 'sim-toggle' + (region === 'us-east-2' ? ' active' : '');
+      document.getElementById('js-sim-reg-mumbai').className = 'sim-toggle' + (region === 'ap-south-1' ? ' active' : '');
+
+      const s1 = document.getElementById('js-flow-s1');
+      const s1Desc = document.getElementById('js-flow-s1-desc');
+      const s1Badge = document.getElementById('js-flow-s1-badge');
+
+      const s2 = document.getElementById('js-flow-s2');
+      const s2Desc = document.getElementById('js-flow-s2-desc');
+      const s2Badge = document.getElementById('js-flow-s2-badge');
+
+      const s3 = document.getElementById('js-flow-s3');
+      const s3Desc = document.getElementById('js-flow-s3-desc');
+      const s3Badge = document.getElementById('js-flow-s3-badge');
+
+      const term = document.getElementById('js-sim-terminal');
+
+      const regionNote = region === 'default'
+        ? `<code>INPUT_BUCKET-REGION='us-east-1'</code> (from <code>action.yml</code> default!)`
+        : `<code>INPUT_BUCKET-REGION='${effectiveRegion}'</code> (from caller <code>with:</code>)`;
+
+      s1.className = 'pipeline-step';
+      s1Desc.innerHTML = `<code>INPUT_BUCKET='${bucket}'</code> · ${regionNote} · <code>INPUT_DIST-FOLDER='./dist'</code>`;
+      s1Badge.className = 'step-badge';
+      s1Badge.textContent = 'node main.js';
+
+      if (!bucket) {
+        s2.className = 'pipeline-step';
+        s2.style.borderColor = 'rgba(239, 68, 68, 0.5)';
+        s2Desc.innerHTML = `<code>core.getInput('bucket', { required: true })</code> throws Error! Kyunki <code>bucket</code> empty hai!`;
+        s2Badge.className = 'step-badge red';
+        s2Badge.textContent = 'FAILED ❌';
+
+        s3.className = 'pipeline-step step-skipped';
+        s3Desc.innerHTML = `Execution yahin ruk jaata hai — na AWS CLI chalta hai, na output set hota hai.`;
+        s3Badge.className = 'step-badge amber';
+        s3Badge.textContent = 'NOT REACHED';
+
+        term.innerHTML =
+          `<div><span class="term-blue">$</span> Running action: <strong>./.github/actions/deploy-s3-javascript</strong></div>` +
+          `<div><span class="term-blue">▶</span> Launching Node runtime: <code>node .github/actions/deploy-s3-javascript/main.js</code></div>` +
+          `<div><span class="term-red">✖ Error: Input required and not supplied: bucket</span></div>` +
+          `<div><span class="term-red">✖ Process completed with exit code 1.</span> (Deploy job stops safely!)</div>`;
+      } else {
+        s2.className = 'pipeline-step step-success';
+        s2.style.borderColor = '';
+        s2Desc.innerHTML = `JS Variables set: <code>bucket="${bucket}"</code>, <code>bucketRegion="${effectiveRegion}"</code>, <code>distFolder="./dist"</code>`;
+        s2Badge.className = 'step-badge green';
+        s2Badge.textContent = 'VALIDATED ✓';
+
+        const cmd = `aws s3 sync ./dist s3://${bucket} --region ${effectiveRegion}`;
+        const url = `http://${bucket}.s3-website-${effectiveRegion}.amazonaws.com`;
+
+        s3.className = 'pipeline-step step-success';
+        s3Desc.innerHTML = `Executes <code>${cmd}</code> → calls <code>core.setOutput('website-url', '${url}')</code>`;
+        s3Badge.className = 'step-badge green';
+        s3Badge.textContent = 'SUCCESS ✓';
+
+        term.innerHTML =
+          `<div><span class="term-blue">$</span> Running action: <strong>./.github/actions/deploy-s3-javascript</strong></div>` +
+          `<div><span class="term-blue">▶</span> Launching Node directly on VM: <code>node main.js</code> (~1s startup!)</div>` +
+          `<div><span class="term-amber">▶ [exec.exec]</span> ${cmd}</div>` +
+          `<div><span class="term-green">  upload:</span> dist/index.html to s3://${bucket}/index.html</div>` +
+          `<div><span class="term-green">  upload:</span> dist/assets/index.js to s3://${bucket}/assets/index.js</div>` +
+          `<div><span class="term-pink">📝 [core.setOutput] $GITHUB_OUTPUT &lt;&lt;</span> website-url=${url}</div>` +
+          `<div><span class="term-green">✅ Next Step in deploy.yml:</span> Live URL: ${url}</div>`;
+      }
+    }
+
+    // =====================================================
+    // 4C. DOCKER ACTION LIVE SIMULATOR
+    // =====================================================
+    const dkSimState = { os: 'ubuntu-latest', region: 'default', image: 'dockerfile' };
+
+    function setDkSim(key, val) {
+      dkSimState[key] = val;
+      renderDkSim();
+    }
+
+    function renderDkSim() {
+      const { os, region, image } = dkSimState;
+      const effectiveRegion = region === 'default' ? 'us-east-1' : region;
+      const bucket = 'gha-security-hosting-demo';
+
+      document.getElementById('dk-sim-os-linux').className = 'sim-toggle' + (os === 'ubuntu-latest' ? ' active-green' : '');
+      document.getElementById('dk-sim-os-mac').className = 'sim-toggle' + (os === 'macos-latest' ? ' active-amber' : '');
+      document.getElementById('dk-sim-reg-default').className = 'sim-toggle' + (region === 'default' ? ' active' : '');
+      document.getElementById('dk-sim-reg-east2').className = 'sim-toggle' + (region === 'us-east-2' ? ' active' : '');
+      document.getElementById('dk-sim-reg-mumbai').className = 'sim-toggle' + (region === 'ap-south-1' ? ' active' : '');
+      document.getElementById('dk-sim-img-file').className = 'sim-toggle' + (image === 'dockerfile' ? ' active' : '');
+      document.getElementById('dk-sim-img-hub').className = 'sim-toggle' + (image === 'prebuilt' ? ' active-green' : '');
+
+      const s1 = document.getElementById('dk-flow-s1');
+      const s1Desc = document.getElementById('dk-flow-s1-desc');
+      const s1Badge = document.getElementById('dk-flow-s1-badge');
+
+      const s2 = document.getElementById('dk-flow-s2');
+      const s2Desc = document.getElementById('dk-flow-s2-desc');
+      const s2Badge = document.getElementById('dk-flow-s2-badge');
+
+      const s3 = document.getElementById('dk-flow-s3');
+      const s3Desc = document.getElementById('dk-flow-s3-desc');
+      const s3Badge = document.getElementById('dk-flow-s3-badge');
+
+      const term = document.getElementById('dk-sim-terminal');
+
+      if (os !== 'ubuntu-latest') {
+        s1.className = 'pipeline-step';
+        s1.style.borderColor = 'rgba(239, 68, 68, 0.55)';
+        s1Desc.innerHTML = `Runner is <code>${os}</code> — Docker Container Actions <strong>SIRF Linux runners</strong> par supported hain! Turant fail!`;
+        s1Badge.className = 'step-badge red';
+        s1Badge.textContent = 'UNSUPPORTED OS ❌';
+
+        s2.className = 'pipeline-step step-skipped';
+        s2Desc.innerHTML = `Container kabhi start hi nahi hota.`;
+        s2Badge.className = 'step-badge amber';
+        s2Badge.textContent = 'NOT REACHED';
+
+        s3.className = 'pipeline-step step-skipped';
+        s3Desc.innerHTML = `<code>deployment.py</code> run nahi hua.`;
+        s3Badge.className = 'step-badge amber';
+        s3Badge.textContent = 'NOT REACHED';
+
+        term.innerHTML =
+          `<div><span class="term-blue">$</span> Job runner: <strong>${os}</strong> · Action: <strong>./.github/actions/deploy-s3-docker</strong></div>` +
+          `<div><span class="term-red">✖ Error: Container action is only supported on Linux</span></div>` +
+          `<div><span class="term-amber">💡 Fix:</span> Either change job to <code>runs-on: ubuntu-latest</code> OR swap to ⚡ <code>deploy-s3-javascript</code>!</div>`;
+        return;
+      }
+
+      s1.style.borderColor = '';
+      if (image === 'dockerfile') {
+        s1.className = 'pipeline-step';
+        s1Desc.innerHTML = `Linux runner OK ✓ · Builds fresh image from <code>Dockerfile</code> (<code>FROM python:3</code> + <code>pip install boto3</code>) — ~25s overhead.`;
+        s1Badge.className = 'step-badge amber';
+        s1Badge.textContent = 'BUILT (~25s)';
+      } else {
+        s1.className = 'pipeline-step step-success';
+        s1Desc.innerHTML = `Linux runner OK ✓ · Pulls pre-built image <code>docker://user/s3:v1</code> directly — zero <code>pip install</code> wait (~3s)!`;
+        s1Badge.className = 'step-badge green';
+        s1Badge.textContent = 'PULLED (~3s) ⚡';
+      }
+
+      const regSource = region === 'default' ? "(from action.yml default)" : "(from caller with:)";
+      s2.className = 'pipeline-step step-success';
+      s2Desc.innerHTML = `Injects <code>INPUT_BUCKET='${bucket}'</code>, <code>INPUT_BUCKET-REGION='${effectiveRegion}'</code> ${regSource}, <code>INPUT_DIST-FOLDER='./dist'</code> + mounts <code>/github/workspace</code> &amp; <code>$GITHUB_OUTPUT</code>.`;
+      s2Badge.className = 'step-badge green';
+      s2Badge.textContent = 'CONTAINER UP ✓';
+
+      const url = `http://${bucket}.s3-website-${effectiveRegion}.amazonaws.com`;
+      s3.className = 'pipeline-step step-success';
+      s3Desc.innerHTML = `<code>boto3</code> uploads <code>./dist/*</code> with auto MIME types → appends <code>website-url=${url}</code> to <code>$GITHUB_OUTPUT</code>!`;
+      s3Badge.className = 'step-badge green';
+      s3Badge.textContent = 'SUCCESS ✓';
+
+      const buildLine = image === 'dockerfile'
+        ? `<div><span class="term-amber">🔨 [docker build]</span> FROM python:3 → pip install boto3==1.24.71 → COPY deployment.py (24s)</div>`
+        : `<div><span class="term-green">⚡ [docker pull]</span> Pulled pre-built docker://user/s3:v1 (3s)</div>`;
+
+      term.innerHTML =
+        `<div><span class="term-blue">$</span> Running action: <strong>./.github/actions/deploy-s3-docker</strong> on <code>ubuntu-latest</code></div>` +
+        buildLine +
+        `<div><span class="term-blue">🐳 [docker run]</span> -v $GITHUB_WORKSPACE:/github/workspace -e INPUT_BUCKET=${bucket} -e INPUT_BUCKET-REGION=${effectiveRegion} -e INPUT_DIST-FOLDER=./dist</div>` +
+        `<div><span class="term-amber">🐍 [python /deployment.py]</span> boto3 uploading ./dist files to s3://${bucket} (${effectiveRegion})...</div>` +
+        `<div><span class="term-green">  upload:</span> index.html (ContentType: text/html) · assets/index.js (application/javascript)</div>` +
+        `<div><span class="term-pink">📝 [$GITHUB_OUTPUT &lt;&lt;]</span> website-url=${url}</div>` +
+        `<div><span class="term-green">✅ Container cleaned up · Next Step in deploy.yml:</span> Live URL: ${url}</div>`;
+    }
+
+    // Initialize interactive widgets on load
+    renderCompSim();
+    renderJsSim();
+    renderDkSim();
+    setSwapMode('js');
+  </script>
+</body>
+</html>
