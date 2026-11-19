@@ -1,8 +1,5 @@
-# The name of the workflow as it appears in the Actions tab of the GitHub repository
 name: Deployment
 
-# Defines trigger events for the workflow.
-# Automatically runs when code is pushed to either the 'main' or 'dev' branch.
 on:
   push:
     branches:
@@ -15,12 +12,11 @@ env:
   MONGODB_DB_NAME: gha-demo
 
 jobs:
-  # Job 1: Responsible for testing the server and application logic
   test:
+    # imp
     # Associates this job with a GitHub Environment named 'testing'.
     # This allows the job to load environment-specific secrets and apply deployment protection rules.
     environment: testing
-    # Runs this job on a hosted Ubuntu virtual machine
     runs-on: ubuntu-latest
 
     # 2. Job-level Environment Variables (Job scope)
@@ -34,27 +30,21 @@ jobs:
       PORT: 8080
 
     steps:
-      # Step 1: Checks out the codebase to this runner VM
       - name: Get Code
         uses: actions/checkout@v3
 
-      # Step 2: Caches dependencies to speed up the install step
       - name: Cache dependencies
         uses: actions/cache@v3
         with:
           path: ~/.npm
           key: npm-deps-${{ hashFiles('**/package-lock.json') }}
 
-      # Step 3: Installs the project dependencies
       - name: Install dependencies
         run: npm ci
 
-      # Step 4: Starts the server in the background ('&') and waits for the HTTP endpoint to become active.
-      # Note: The database connection requires MongoDB Atlas to allow connections from the runner's dynamic IP address.
       - name: Run server
         run: npm start & npx wait-on http://127.0.0.1:$PORT
 
-      # Step 5: Runs the test suite
       - name: Run tests
         run: npm test
 
@@ -64,13 +54,10 @@ jobs:
         run: |
           echo "MONGODB_USERNAME: $MONGODB_USERNAME"
 
-  # Job 2: Simulates the deployment of the application
   deploy:
-    # Requires the 'test' job to complete successfully first
     needs: test
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Demonstrates variable scopes
       - name: Output information
         # 3. Step-level Environment Variables (Step scope)
         # ONLY available within this single step.

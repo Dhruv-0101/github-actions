@@ -1,75 +1,68 @@
-# The name of the workflow as it appears in the Actions tab of the GitHub repository
 name: Website Deployment
 
-# Defines trigger events for this workflow.
-# Triggers automatically whenever code is pushed to the 'main' branch.
 on:
   push:
     branches:
       - main
 
-# A list of jobs that run as part of this workflow run
 jobs:
-  # Job 1: Lints the application code to ensure styling and formatting compliance
   lint:
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Checks out the repository code
       - name: Get code
-        uses: actions/checkout@v3
-        
-      # Step 2: Caches node_modules directory using a hash key of the lock file.
-      # Note: 'id: cache' registers this step's output so it can be checked in subsequent steps.
+        uses:
+          actions/checkout@v3
+
+          # ~/.npm vs node_modules ka funda:
+      # 1. Pehle path: ~/.npm tha -> Isme sirf npm ka download cache save hota tha, project ka './node_modules' nahi.
+      #    Nateeja: Cache hit hone ke BAAVJOOD har baar 'npm ci' chalana compulsory tha taaki node_modules ban sake.
+      # 2. Ab path: node_modules hai -> Pura ready-made 'node_modules' folder hi directly cache aur restore ho jata hai!
+      #    Fayda (Execution Flow): 'id: cache' se hum 'steps.cache.outputs.cache-hit' check karte hain.
+      #    Agar cache mil gaya (HIT), to agla 'npm ci' step 100% SKIP ho jata hai -> har job me 15-30 second bachte hain!
+
+      # Dependency Caching ka Evolution (Zero Cache -> ~/.npm -> node_modules):
+      # 1. Bina Cache ke (Sabse slow 🐌):
+      #    Har baar internet se saare packages naye sire se download karo + unpack karo (1-2 minute waste).
+      # 2. Pehle path: ~/.npm tha (Kuch nahi se behtar 🚗):
+      #    Isme packages ki zip/tarball files local disk pe save rehti thi.
+      #    Fayda: Internet se dubara download nahi karna padta tha, bas local disk se unpack hota tha (time bachta tha).
+      #    Limitation: Project ka './node_modules' folder nahi banta tha, isliye 'npm ci' chalana compulsory tha.
+      # 3. Ab path: node_modules hai (Superfast ⚡):
+      #    Pura ready-to-use 'node_modules' folder hi seedha restore ho jata hai!
+      #    Fayda (Execution Flow): 'id: cache' se check kiya -> agar cache HIT hua, to 'npm ci' chalane ki
+      #    zaroorat hi nahi, step 100% SKIP ho jayega -> 0 second overhead!
       - name: Cache dependencies
         id: cache
         uses: actions/cache@v3
         with:
           path: node_modules
           key: deps-node-modules-${{ hashFiles('**/package-lock.json') }}
-          
-      # Step 3: Installs dependencies using clean install (npm ci).
-      # Note: The 'if' condition determines whether this step runs.
-      # - Expressions in 'if' blocks should NOT be wrapped in '${{ }}' (GitHub Actions parses them as expressions by default).
-      # - This step only runs if there is a cache miss (i.e. cache-hit is NOT 'true').
       - name: Install dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci
-        
-      # Step 4: Runs the linter script
       - name: Lint code
         run: npm run lint
 
-  # Job 2: Runs tests on the application
   test:
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Checks out code
       - name: Get code
         uses: actions/checkout@v3
-        
-      # Step 2: Caches node_modules (reusing the same cache key/hash logic)
       - name: Cache dependencies
         id: cache
         uses: actions/cache@v3
         with:
           path: node_modules
           key: deps-node-modules-${{ hashFiles('**/package-lock.json') }}
-          
-      # Step 3: Installs dependencies if cache hit did not occur
       - name: Install dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci
-        
-      # Step 4: Runs tests and produces a test report.
-      # - 'id: run-tests' is set so we can check the execution status of this specific step.
       - name: Test code
         id: run-tests
         run: npm run test
-        
-      # Step 5: Uploads the test report if tests fail.
-      # - 'failure()' is a job status check that evaluates to true if any previous step in this job failed.
-      # - 'steps.run-tests.outcome' evaluates the result of the test step before any 'continue-on-error' configuration is applied.
-      # - This step executes ONLY when the job status is failed AND the test step specifically failed.
+        # 4 upar test fail ho gaya but without failure() upload report generate nahi hua
+        # aisa isliye hua ki jaha par bhi fail ho jaye waha par ruk jao and aage ka run mat karo to test fail hone ke baad execution yaha par hi ruk gaya
+        # par jab hamne failure() lagaya to github ko malum hai ki niche wala step bhi mujhe execute karna hai if conditions met
       - name: Upload test report
         if: failure() && steps.run-tests.outcome == 'failure'
         uses: actions/upload-artifact@v3
@@ -77,74 +70,61 @@ jobs:
           name: test-report
           path: test.json
 
-  # Job 3: Builds the application for production
   build:
-    # Requires the 'test' job to complete successfully first
     needs: test
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Checks out code
       - name: Get code
         uses: actions/checkout@v3
-        
-      # Step 2: Caches node_modules
       - name: Cache dependencies
         id: cache
         uses: actions/cache@v3
         with:
           path: node_modules
           key: deps-node-modules-${{ hashFiles('**/package-lock.json') }}
-          
-      # Step 3: Installs dependencies if cache missed
       - name: Install dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci
-        
-      # Step 4: Builds production-ready files
       - name: Build website
         id: build-website
         run: npm run build
-        
-      # Step 5: Uploads compiled 'dist' files as a workspace artifact
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
           name: dist-files
           path: dist
 
-  # Job 4: Deploys the built application
   deploy:
-    # Requires the 'build' job to complete successfully first
     needs: build
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Downloads the compiled 'dist-files' artifact
       - name: Get build artifacts
         uses: actions/download-artifact@v3
         with:
           name: dist-files
-          
-      # Step 2: Outputs the files in the directory to verify the download
       - name: Output contents
         run: ls
-        
-      # Step 3: Simulates deployment
       - name: Deploy
         run: echo "Deploying..."
 
-  # Job 5: Execution report fallback job
   report:
-    # Depends on both 'lint' and 'deploy' jobs.
-    # Normally, if a dependency fails, downstream jobs are skipped.
+    # 1. needs: [lint, deploy] -> Poore workflow ko cover karne ka trick:
+    # Pipeline me 2 branches hain:
+    # - Branch 1: 'lint' (akela independent job)
+    # - Branch 2: 'test' -> 'build' -> 'deploy' (chain job)
+    # Yahan sirf 'lint' aur 'deploy' likhne se poora workflow cover ho gaya.
+    # (Agar 'test' ya 'build' fail hoga, to 'deploy' skip hoga, matlab Branch 2 fail -> report trigger!)
+
+    # 2. if: failure() -> Default behavior ko override karna:
+    # By default agar pichla job fail ho jaye, to GitHub aage ke dependent jobs SKIP kar deta hai.
+    # Lekin 'report' job ka kaam hi gadbad hone par alert/log dena hai!
+    # Isliye 'if: failure()' lagaya taaki agar koi bhi job fail ho, tab ye zaroor chale.
+    # (Aur agar sab pass ho gaya to ye job automatically SKIP ho jayega).
     needs: [lint, deploy]
-    # By adding 'if: failure()', we override the default skip behavior.
-    # This job will run ONLY if one or more dependent jobs ('lint' or 'deploy') fail.
     if: failure()
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Outputs debug logs containing the serialized github context payload
       - name: Output information
-        run: | 
+        run: |
           echo "Something went wrong"
           echo "${{ toJSON(github) }}"
-

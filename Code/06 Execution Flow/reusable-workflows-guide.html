@@ -1,15 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GitHub Actions: Reusable Workflows Guide</title>
-  
+
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
-  
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Outfit:wght@300;400;600;800&display=swap"
+    rel="stylesheet">
+
   <style>
     :root {
       --bg-dark: #0b0f19;
@@ -300,20 +303,39 @@
     }
 
     @keyframes pulse {
-      0% { opacity: 0.3; transform: translateY(0); }
-      50% { opacity: 1; transform: translateY(3px); }
-      100% { opacity: 0.3; transform: translateY(0); }
+      0% {
+        opacity: 0.3;
+        transform: translateY(0);
+      }
+
+      50% {
+        opacity: 1;
+        transform: translateY(3px);
+      }
+
+      100% {
+        opacity: 0.3;
+        transform: translateY(0);
+      }
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(15px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(15px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     @media (max-width: 900px) {
       .container {
         grid-template-columns: 1fr;
       }
+
       .sidebar {
         position: static;
         margin-bottom: 2rem;
@@ -324,9 +346,11 @@
         align-items: flex-start;
         gap: 1rem;
       }
+
       .step-number {
         margin-right: 0;
       }
+
       .step-badge {
         margin-left: 0;
         margin-top: 0.5rem;
@@ -335,6 +359,7 @@
     }
   </style>
 </head>
+
 <body>
 
   <div class="glow-bg"></div>
@@ -342,7 +367,8 @@
 
   <header>
     <h1>GitHub Actions: Reusable Workflows Guide</h1>
-    <p>Inputs aur Outputs ko dynamic scope ke through target file tak bubble-up karne ka pure logic, simple Hinglish explanation ke saath.</p>
+    <!-- <p>Inputs aur Outputs ko dynamic scope ke through target file tak bubble-up karne ka pure logic, simple Hinglish
+      explanation ke saath.</p> -->
   </header>
 
   <div class="container">
@@ -360,14 +386,15 @@
 
     <!-- Main Content Area -->
     <main class="main-content">
-      
+
       <!-- SECTION 1: INPUTS PATH -->
       <section id="inputs-flow" class="tab-content active">
         <div class="card">
           <span class="hinglish-tag">Inputs Flow</span>
           <h2 class="card-title">📥 Caller se Reusable tak Arguments pass karna</h2>
           <p class="intro-text">
-            Maan lo aapke paas ek build artifact folder hai (e.g. `dist-files`). Aapko is folder ka naam reusable workflow me pass karna hai.
+            Maan lo aapke paas ek build artifact folder hai (e.g. `dist-files`). Aapko is folder ka naam reusable
+            workflow me pass karna hai.
             Dekho kaise parameters transfer hote hain step-by-step:
           </p>
 
@@ -380,14 +407,15 @@
               </div>
               <div class="step-badge">artifact-name: dist-files</div>
             </div>
-            
+
             <div class="pipeline-arrow">▼</div>
 
             <div class="pipeline-step">
               <div class="step-number">2</div>
               <div class="step-details">
                 <h4>Reusable receives parameters</h4>
-                <p>reusable.yml ke top configuration on <code>workflow_call.inputs</code> me variable receive hota hai.</p>
+                <p>reusable.yml ke top configuration on <code>workflow_call.inputs</code> me variable receive hota hai.
+                </p>
               </div>
               <div class="step-badge">inputs.artifact-name</div>
             </div>
@@ -405,7 +433,7 @@
           </div>
         </div>
 
-        <div class="card">
+        <!-- <div class="card">
           <h2 class="card-title">💡 Inputs ka Feel (Hinglish Analogy)</h2>
           <p class="intro-text">
             Ye bilkul normal program function calling ki tarah hai:
@@ -413,7 +441,7 @@
           <p class="intro-text" style="background: rgba(255, 255, 255, 0.02); padding: 1.25rem; border-radius: 8px; font-style: italic; border-left: 4px solid var(--primary-neon);">
             "Caller file ne function call kiya: <code>reusableDeploy('dist-files')</code>. Reusable file ne function definition likhi: <code>function reusableDeploy(artifactName)</code>. Pura code chalte samay jahan bhi <code>artifactName</code> tha, wahan automatic <code>'dist-files'</code> replacement ho gaya."
           </p>
-        </div>
+        </div> -->
       </section>
 
       <!-- SECTION 2: OUTPUTS BUBBLE-UP -->
@@ -422,7 +450,8 @@
           <span class="hinglish-tag">Outputs Flow</span>
           <h2 class="card-title">📤 Outputs Bubble-Up Chain</h2>
           <p class="intro-text">
-            Ek Reusable Job ke steps ek unique VM ke inside run hote hain. Job complete hote hi wo VM delete ho jati hai.
+            Ek Reusable Job ke steps ek unique VM ke inside run hote hain. Job complete hote hi wo VM delete ho jati
+            hai.
             Value ko bubble-up karke caller file tak laane ka 4-stage pipeline is tarah hai:
           </p>
 
@@ -431,7 +460,8 @@
               <div class="step-number">1</div>
               <div class="step-details">
                 <h4>Step Level (Save to local notepad)</h4>
-                <p>Step apna run execute karne ke baad <code>$GITHUB_OUTPUT</code> stream file me string variable save karta hai.</p>
+                <p>Step apna run execute karne ke baad <code>$GITHUB_OUTPUT</code> stream file me string variable save
+                  karta hai.</p>
               </div>
               <div class="step-badge">step-result=success</div>
             </div>
@@ -442,7 +472,8 @@
               <div class="step-number">2</div>
               <div class="step-details">
                 <h4>Job Level (Save to job border)</h4>
-                <p>Job ke exit-gate <code>outputs</code> block me steps ke data ko retrieve karke job output banaya jata hai.</p>
+                <p>Job ke exit-gate <code>outputs</code> block me steps ke data ko retrieve karke job output banaya jata
+                  hai.</p>
               </div>
               <div class="step-badge">outcome: ${{ steps.set-result... }}</div>
             </div>
@@ -453,7 +484,8 @@
               <div class="step-number">3</div>
               <div class="step-details">
                 <h4>Workflow Level (Save to public API)</h4>
-                <p>Workflow ke top level <code>workflow_call.outputs</code> me mapping connection configure kiya jata hai.</p>
+                <p>Workflow ke top level <code>workflow_call.outputs</code> me mapping connection configure kiya jata
+                  hai.</p>
               </div>
               <div class="step-badge">result: value: ${{ jobs.deploy... }}</div>
             </div>
@@ -464,7 +496,8 @@
               <div class="step-number">4</div>
               <div class="step-details">
                 <h4>Caller reads Return Value</h4>
-                <p>Caller workflow <code>needs.deploy.outputs.result</code> tag call karke use log print ya script run me print karta hai.</p>
+                <p>Caller workflow <code>needs.deploy.outputs.result</code> tag call karke use log print ya script run
+                  me print karta hai.</p>
               </div>
               <div class="step-badge">${{ needs.deploy.outputs.result }}</div>
             </div>
@@ -487,11 +520,12 @@
 
       event.currentTarget.classList.add('active');
       document.getElementById(tabId).classList.add('active');
-      
+
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
 
   </script>
 </body>
+
 </html>

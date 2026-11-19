@@ -1,17 +1,10 @@
-# The name of the workflow as it appears in the Actions tab of the GitHub repository
 name: Output information
 
-# Defines the trigger for this workflow.
-# Configures the workflow to run only when manually triggered from the GitHub UI, REST API, or CLI.
 on: workflow_dispatch
 
-# A workflow run is made up of one or more jobs that run sequentially or in parallel
 jobs:
-  # Defines a job named 'info'
   info:
-    # Runs the job on a hosted Ubuntu virtual machine
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Serializes the global 'github' context object into JSON and prints it to the console logs
       - name: Output GitHub context
-        run: echo "${{ toJSON(github) }}"
+        run: echo "${{ toJSON(github) }}"

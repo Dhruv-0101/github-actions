@@ -1,51 +1,32 @@
-# The name of the reusable workflow
 name: Reusable Deploy
 
-on: 
-  # 'workflow_call' makes this workflow reusable, allowing it to be called from other workflows.
+on:
   workflow_call:
-    # Defines inputs that the calling workflow can or must pass to this workflow
     inputs:
-      # The key/name of the input parameter that the caller workflow will reference
       artifact-name:
-        # Human-readable explanation of the input (shown in the GitHub UI and documentation)
         description: The name of the deployable artifact files
-        # Set to 'false' to make this input optional; 'true' would force the caller to provide it
         required: false
-        # The fallback value to use if the caller workflow does not supply this argument
         default: dist
-        # Specifies the data type expected for this input (e.g., string, boolean, number)
         type: string
-    # Defines outputs that this workflow returns back to the calling workflow
     outputs:
       result:
         description: The result of the deployment operation
-        # Maps the workflow-level output 'result' to the 'outcome' output of the 'deploy' job
         value: ${{ jobs.deploy.outputs.outcome }}
-    # secrets:
-      # some-secret:
-        # required: false
 
 jobs:
   deploy:
-    # Exposes a job-level output 'outcome' to be mapped to the workflow-level output above
     outputs:
       outcome: ${{ steps.set-result.outputs.step-result }}
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Downloads the artifact passed in via the inputs parameter
       - name: Get Code
         uses: actions/download-artifact@v3
         with:
-          # Accesses the input value using the 'inputs' context
           name: ${{ inputs.artifact-name }}
-          
       - name: List files
         run: ls
       - name: Output information
         run: echo "Deploying & uploading..."
-        
-      # Step 4: Writes to $GITHUB_OUTPUT to set the step-level output
       - name: Set result output
         id: set-result
-        run: echo "step-result=success" >> $GITHUB_OUTPUT
+        run: echo "step-result=success" >> $GITHUB_OUTPUT

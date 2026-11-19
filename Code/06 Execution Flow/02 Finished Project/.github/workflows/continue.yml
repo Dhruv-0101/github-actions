@@ -42,7 +42,7 @@ jobs:
         continue-on-error: true
         id: run-tests
         run: npm run test
-        
+
       # Because the job is still considered successful (thanks to continue-on-error),
       # this step runs unconditionally by default even if the test suite failed. No 'if: failure()' is needed.
       - name: Upload test report
@@ -91,6 +91,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Output information
-        run: | 
+        run: |
           echo "Something went wrong"
           echo "${{ toJSON(github) }}"
